@@ -23,13 +23,13 @@
         <Root level="info">
             <AppenderRef ref="stdout"/>
         </Root>
-        <Logger name="main.WeightedConsensusCalling" level="info" additivity="false">
+        <Logger name="dorian.dorian" level="info" additivity="false">
             <AppenderRef ref="stdout"/>
         </Logger>
-        <Logger name="file.main.WeightedConsensusCalling" level="info" additivity="false">
+        <Logger name="file.dorian.dorian" level="info" additivity="false">
             <AppenderRef ref="file"/>
         </Logger>
-        <Logger name="roi.main.WeightedConsensusCalling" level="info" additivity="false">
+        <Logger name="roi.dorian.dorian" level="info" additivity="false">
             <AppenderRef ref="roi-tab"/>
         </Logger>
     </Loggers>
