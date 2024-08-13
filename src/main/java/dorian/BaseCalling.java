@@ -2,14 +2,17 @@ package dorian;
 
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
-import datastructure.CorrectionMode;
-import datastructure.MappingPosition;
-import datastructure.VariantType;
+import datastructure.*;
 import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.SamReader;
+import htsjdk.samtools.SamReaderFactory;
+import htsjdk.samtools.util.SamLocusIterator;
+import htsjdk.variant.variantcontext.VariantContext;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.*;
 
-import static dorian.DamageCorrection.correctDamage;
 import static dorian.dorian.cor_mode;
 
 /**
@@ -26,46 +29,87 @@ public class BaseCalling {
 
     /**
      * Determines a base call based on coverage, frequency and damage level of the bases at a given position.
-     * @param mapping_reads   List of mapping reads
-     * @param min_cov_1   Lower coverage threshold
-     * @param min_freq  Lower base frequency threshold
+     * @param mapping_reads     List of mapping reads
+     * @param min_cov           Minimal coverage threshold
+     * @param min_freq          Minimal base frequency threshold
      * @return  Base call for specified ref position according to filter criteria
      */
-    public static Character makeBaseCall(ArrayList<MappingPosition> mapping_reads, int min_cov_1, int min_cov_2, double min_freq) {
-        // Check if coverage parameter is fulfilled
-        ArrayList<MappingPosition> corrected_reads;
-        if (mapping_reads.size() < min_cov_1) {
-            return 'N';
-        } else {
-            // Check if C & T from forward reads (or G & A from reverse reads) are present
-            // and correct damage if necessary
-            final VariantType variant_type = getVariantType(mapping_reads);
-            corrected_reads = switch (variant_type) {
-                case CT, GA -> correctDamage(mapping_reads, variant_type);
-                case NONE -> VariantCalling.cloneList(mapping_reads);
-            };
+    public static ReturnTuple makeBaseCall(File reads, int min_cov, double min_freq,
+                                           Fasta ref, String sampleName) throws IOException {
+        // Initialise output
+        StringBuilder consensus_sequence = new StringBuilder();
+        List<VariantContext> variant_calls = new ArrayList<>();
+
+        // Iterate over bam file
+        try (SamReader reader = SamReaderFactory.makeDefault().open(reads)) {
+            // Initialize SamLocusIterator
+            SamLocusIterator locusIterator = new SamLocusIterator(reader);
+            // Iterate over each position
+            for (SamLocusIterator.LocusInfo locusInfo : locusIterator) {
+                int referencePosition = locusInfo.getPosition();
+                ArrayList<MappingPosition> mappingReads = new ArrayList<>();
+
+                // GET MAPPING READS //
+                for (SamLocusIterator.RecordAndOffset recordAndOffset : locusInfo.getRecordAndOffsets()) {
+                    SAMRecord record = recordAndOffset.getRecord();
+                    mappingReads.add(MappingPosition.createMappingPosition(record, referencePosition));
+                }
+
+                // BASE CALLING //
+                Character base_call;
+                Map<Character, Double> cntBases = countBaseFrequencies(mappingReads);
+
+                // Check if coverage parameter is fulfilled
+                if (mappingReads.size() < min_cov) {
+                    // Add variant object and make non-informative base call
+                    variant_calls.add(VariantCalling.makeVariantCall(cntBases, ref, referencePosition, sampleName));
+                    base_call = 'N';
+                } else {
+
+                    // TODO:
+                    //  - Add switch case for correction mode
+                    //  - Remove 'N' case from 'countBaseFrequencies'
+
+                    ArrayList<MappingPosition> mappingReadsCor = new ArrayList<>(); //TODO
+                    /*
+                    // Check if C & T from forward reads (or G & A from reverse reads) are present
+                    // and correct damage if necessary
+                    final VariantType variant_type = getVariantType(mapping_reads);
+                        mappingReadsCor = switch (variant_type) {
+                        case CT, GA -> correctDamage(mapping_reads, variant_type);
+                        case NONE -> cloneList(mapping_reads);
+                    };
+                     */
+
+                    // Count base occurrences after correction
+                    Map<Character, Double> cntBasesCor = countBaseFrequencies(mappingReadsCor);
+
+                    // Get base and count of most occurring base
+                    Character max_base = getMostOccurringBase(cntBasesCor);
+                    Double max_count = cntBasesCor.get(max_base);
+
+                    // Determine frequency of most occurring base
+                    double weightSum = getCountSum(cntBasesCor);
+                    MAX_FREQ = max_count / weightSum;
+
+                    // Add variant object from corrected calls
+                    variant_calls.add(VariantCalling.makeVariantCall(cntBasesCor, ref, referencePosition, sampleName));
+
+                    if (MAX_FREQ < min_freq) {
+                        //TODO: Add log file entry
+                        base_call = 'N';
+                    } else {
+                        // TODO: Add log file entry
+                        base_call = max_base;
+                    }
+                }
+
+                // Add final base call to sequence
+                consensus_sequence.append(base_call);
+            }
         }
 
-        // Count base frequencies
-        Map<Character, Double> base_freq = countBaseFrequencies(corrected_reads);
-
-        // Check if #non-N bases > min_cov_2
-        double nonN_count = countNonNBases(base_freq);
-        if (nonN_count < min_cov_2){
-            return 'N';
-        }
-
-        // Get base and count of most occurring base
-        Character max_base = getMostOccurringBase(base_freq);
-        Double max_count = base_freq.get(max_base);
-
-        // Check if base frequencies are above threshold
-        MAX_FREQ = max_count / nonN_count;
-        if (MAX_FREQ < min_freq) {
-            return 'N';
-        } else {
-            return max_base;
-        }
+        return new ReturnTuple(consensus_sequence, variant_calls);
     }
 
 
@@ -79,8 +123,7 @@ public class BaseCalling {
         Map<Character, Double> base_freq = new java.util.HashMap<>(Map.of('C', 0.0,
                                                                             'T', 0.0,
                                                                             'G', 0.0,
-                                                                            'A', 0.0,
-                                                                            'N', 0.0));
+                                                                            'A', 0.0));
         for (MappingPosition mp : mapping_reads) {
             if (mp.base == 'C') {
                 base_freq.put('C', base_freq.get('C') + mp.weight);
@@ -90,8 +133,6 @@ public class BaseCalling {
                 base_freq.put('G', base_freq.get('G') + mp.weight);
             } else if (mp.base == 'A') {
                 base_freq.put('A', base_freq.get('A') + mp.weight);
-            } else if (mp.base == 'N') {
-                base_freq.put('N', base_freq.get('N') + mp.weight);
             }
         }
         return base_freq;
@@ -139,38 +180,14 @@ public class BaseCalling {
 
 
     /**
-     * Extracts all reads mapping to a specified reference position from a set of reads
-     *
-     * @param reads Set of reads
-     * @param ref_pos   1-based reference position
-     * @return  Set of reads mapping to the specified position
-     */
-    public static ArrayList<MappingPosition> getMappingReads(List<SAMRecord> reads, int ref_pos) {
-        // Extract mapping reads
-        ArrayList<MappingPosition> mapping_reads = new ArrayList<>();
-        for (SAMRecord read : reads) {
-            // Check if read maps to reference position
-            int read_idx = read.getReadPositionAtReferencePosition(ref_pos) - 1;
-            if (read_idx != -1) {
-                mapping_reads.add(new MappingPosition(read.getReadString().charAt(read_idx), read_idx,
-                        read.getReadLength(), read.getReadNegativeStrandFlag(), 1.0));
-            }
-        }
-        return mapping_reads;
-    }
-
-
-    /**
-     * Counts the number of non-N bases in a Map
+     * Sums the values in a Hashmap
      * @param base_count_map Map of base counts
-     * @return Number of non-N bases
+     * @return Sum of all base weights
      */
-    private static double countNonNBases(Map<Character, Double> base_count_map){
+    private static double getCountSum(Map<Character, Double> base_count_map){
         double cnt = 0.0;
-        for (Character key: base_count_map.keySet()){
-            if (key != 'N'){
-                cnt += base_count_map.get(key);
-            }
+        for (double val: base_count_map.values()){
+                cnt += val;
         }
         return cnt;
     }
