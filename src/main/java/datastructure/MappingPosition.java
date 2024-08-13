@@ -1,5 +1,7 @@
 package datastructure;
 
+import htsjdk.samtools.SAMRecord;
+
 /**
  * Represents a mapping position in a read.
  *
@@ -74,6 +76,23 @@ public class MappingPosition {
 
     public double getWeight() {
         return this.weight;
+    }
+
+
+    /**
+     * Extracts information of SAMrecord and creates MappingPosition
+     *
+     * @param record    Set of reads
+     * @param ref_pos   1-based reference position
+     * @return  MappingPosition object
+     */
+    public static MappingPosition createMappingPosition(SAMRecord record, int ref_pos) {
+        int read_idx = record.getReadPositionAtReferencePosition(ref_pos) - 1;
+
+        return new MappingPosition(record.getReadString().charAt(read_idx),
+                read_idx,
+                record.getReadLength(),
+                record.getReadNegativeStrandFlag(), 1.0);
     }
 
 
