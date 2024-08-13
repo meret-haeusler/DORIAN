@@ -1,11 +1,12 @@
 package dorian;
 
 import cli.CLIParser;
-import datastructure.CorrectionMode;
-import datastructure.Fasta;
-import datastructure.FastaIO;
-import datastructure.MappingPosition;
+import datastructure.*;
+import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.SamReader;
+import htsjdk.samtools.SamReaderFactory;
+import htsjdk.samtools.util.SamLocusIterator;
 import htsjdk.variant.variantcontext.VariantContext;
 import htsjdk.variant.vcf.*;
 import org.apache.logging.log4j.LogManager;
@@ -13,12 +14,15 @@ import org.apache.logging.log4j.Logger;
 import me.tongfei.progressbar.*;
 
 import java.io.BufferedWriter;
+import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.text.SimpleDateFormat;
 import java.util.*;
+
+import static dorian.BaseCalling.makeBaseCall;
 
 /**
  * @author Meret Häusler
@@ -32,8 +36,7 @@ public class dorian {
     public static CorrectionMode cor_mode;
     public static List<Double> dp5;
     public static List<Double> dp3;
-    public static int cov_1;
-    public static int cov_2;
+    public static int cov;
     public static double freq;
     public static Character base_call;
 
@@ -42,15 +45,15 @@ public class dorian {
         // LOGGING //
         Date log_date = new Date();
         String time_stamp = new SimpleDateFormat("yyyy-MM-dd_HH-mm-ss").format(log_date);
-        logger.info("Starting WEIGHTED DAMAGE CORRECTION\n");
-        file_logger.info("WEIGHTED DAMAGE CORRECTION – REPORT\nRun: "
+        logger.info("Starting DORIAN\n");
+        file_logger.info("DORIAN – REPORT\nRun: "
                 + new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(log_date) + "\n");
 
         // PARSING INPUT FILES //
         CLIParser cli_parser = new CLIParser(args);
 
         // BAM file
-        List<SAMRecord> reads = cli_parser.BAM;
+        File reads = cli_parser.BAM;
         // Correction mode
         cor_mode = cli_parser.COR_MODE;
         // Damage profiles
@@ -61,8 +64,7 @@ public class dorian {
         // Output directory
         Path out_path = cli_parser.OUT;
         // Minimal Coverage
-        cov_1 = cli_parser.MIN_COV1;
-        cov_2 = cli_parser.MIN_COV2;
+        cov = cli_parser.MIN_COV;
         // Minimal Frequency
         freq = cli_parser.MIN_FREQ;
         // Reference
@@ -72,7 +74,7 @@ public class dorian {
 
 
         // MAIN PROGRAMME //
-        if (cor_mode.equals(CorrectionMode.NO_COR)) { //TODO: Remove when no longer needed
+        if (cor_mode.equals(CorrectionMode.NO_COR)) {
             file_logger.info("\nCalls:");
             file_logger.info("POS\tBASE_CALL\tBASE_FREQ");
         }
@@ -87,10 +89,9 @@ public class dorian {
             roi_tab.info("#CHROM\tROI_START\tROI_END\tCORRECTED_POS");
         }
 
-        // Initialise empty output datastructures
-        StringBuilder consensus_sequence = new StringBuilder();
-        List<VariantContext> variant_calls = new ArrayList<>();
-
+        // Initialise Progress bar
+        StringBuilder consensus_sequence = null;
+        List<VariantContext> variant_calls = List.of();
         try (ProgressBar pb = new ProgressBarBuilder()
                 .setInitialMax(ref.getSequence().length())
                 .setStyle(ProgressBarStyle.ASCII)
@@ -98,16 +99,14 @@ public class dorian {
                 .setMaxRenderedLength(120)
                 .setUpdateIntervalMillis(100)
                 .build()) {
-            for (int pos = 1; pos <= ref.getSequence().length(); pos++) {
-                // MAPPING READS //
-                ArrayList<MappingPosition> mapping_reads = BaseCalling.getMappingReads(reads, pos);
-                // BASE CALLING //
-                base_call = BaseCalling.makeBaseCall(mapping_reads, cov_1, cov_2, freq);
-                consensus_sequence.append(base_call);
-                // VARIANT CALLING //
-                variant_calls.add(VariantCalling.makeVariantCall(mapping_reads, ref, pos, sample_name));
-                pb.step();
-            }
+
+            //TODO: Add BaseCalling call and resolve returns
+            ReturnTuple BaseCallingOut = makeBaseCall(reads, cov, freq, ref, "dummy");
+            consensus_sequence = BaseCallingOut.getSeq();
+            variant_calls = BaseCallingOut.getVariants();
+
+            pb.step();
+
         } catch (Exception e){
             logger.error("Variant Calling ran into an issue: " + e.getMessage());
             System.exit(-1);
@@ -167,7 +166,7 @@ public class dorian {
                     out_path + "/" + time_stamp + "_" + sample_name + "_" + cor_mode.getShortName() + ".bed");
         }
         System.out.println();
-        logger.info("WEIGHTED DAMAGE CORRECTION completed successfully.");
+        logger.info("DORIAN completed successfully.");
     }
 
     /**
@@ -200,13 +199,11 @@ public class dorian {
         VCFHeaderLine cor_mode_filter = new VCFInfoHeaderLine("COR_MODE", 1, VCFHeaderLineType.String,
                 "Used correction mode: " + dorian.cor_mode.getModeName());
         VCFHeaderLine cov_1_filter = new VCFInfoHeaderLine("MIN_COV_1", 2, VCFHeaderLineType.String,
-                "Minimal coverage filter (incl. N): " + dorian.cov_1);
-        VCFHeaderLine cov_2_filter = new VCFInfoHeaderLine("MIN_COV_2", 2, VCFHeaderLineType.String,
-                "Minimal coverage filter (excl. N): " + dorian.cov_2);
+                "Minimal coverage filter (incl. N): " + dorian.cov);
         VCFHeaderLine freq_filter = new VCFInfoHeaderLine("MIN_FREQ", 3, VCFHeaderLineType.String,
                 "Minimal base frequency filter: " + dorian.freq);
 
-        Set<VCFHeaderLine> meta_data = new HashSet<>(Arrays.asList(contig, ad, dp, cor_mode_filter, cov_1_filter, cov_2_filter, freq_filter));
+        Set<VCFHeaderLine> meta_data = new HashSet<>(Arrays.asList(contig, ad, dp, cor_mode_filter, cov_1_filter, freq_filter));
 
         VCFHeader header = new VCFHeader(meta_data, new ArrayList<>(Collections.singleton(sample_name)));
 
