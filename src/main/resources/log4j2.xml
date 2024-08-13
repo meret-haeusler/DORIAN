@@ -1,0 +1,38 @@
+<Configuration name="ConfigTest">
+    <Appenders>
+        <Console name="stdout" target="SYSTEM_OUT">
+            <PatternLayout pattern="%highlight{[%d{yyyy-MM-dd HH:mm:ss}] %p %m%n}{INFO=bright_white}"/>
+        </Console>
+        <RollingFile name="file" filePattern="./file.log" immediateFlush="true">
+            <PatternLayout pattern="%m%n"/>
+            <Policies>
+                <SizeBasedTriggeringPolicy size="32 MB" />
+                <OnStartupTriggeringPolicy/>
+            </Policies>
+        </RollingFile>
+        <RollingFile name="roi-tab" filePattern="./roi.bed" immediateFlush="true">
+            <PatternLayout pattern="%m%n"/>
+            <Policies>
+                <SizeBasedTriggeringPolicy size="32 MB" />
+                <OnStartupTriggeringPolicy/>
+            </Policies>
+        </RollingFile>
+    </Appenders>
+
+    <Loggers>
+        <Root level="info">
+            <AppenderRef ref="stdout"/>
+        </Root>
+        <Logger name="main.WeightedConsensusCalling" level="info" additivity="false">
+            <AppenderRef ref="stdout"/>
+        </Logger>
+        <Logger name="file.main.WeightedConsensusCalling" level="info" additivity="false">
+            <AppenderRef ref="file"/>
+        </Logger>
+        <Logger name="roi.main.WeightedConsensusCalling" level="info" additivity="false">
+            <AppenderRef ref="roi-tab"/>
+        </Logger>
+    </Loggers>
+
+</Configuration>
+
