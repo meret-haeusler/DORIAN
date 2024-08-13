@@ -23,4 +23,8 @@ public enum CorrectionMode {
         return short_name;
     }
 
+    public boolean needsDP(){
+        return equals(REFFREE_WEI);
+    }
+
 }
