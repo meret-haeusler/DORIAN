@@ -1,10 +1,10 @@
 package datastructure;
 
 public enum CorrectionMode {
-    DAM_SIL("silence damage", "silence-dam"),
-    WCC("weighted-correction w/o reference upvote", "wc-NoUpvote"),
-    WCC_UPVOTE("weighted-correction with reference upvote", "wc-WithUpvote"),
-    NO_COR("no correction", "no-cor")
+    NO_COR("no correction", "no-cor"),
+    REFBASED_SIL("reference-based silencing", "ref-based_sil"),
+    REFFREE_SIL("reference-free silencing", "ref-free_sil"),
+    REFFREE_WEI("reference-free weighting", "ref-free_weighting")
     ;
 
     private final String mode_name;
@@ -21,10 +21,6 @@ public enum CorrectionMode {
 
     public String getShortName() {
         return short_name;
-    }
-
-    public boolean needsCorrection(){
-        return equals(WCC) || equals(WCC_UPVOTE);
     }
 
 }
