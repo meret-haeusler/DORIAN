@@ -2,11 +2,6 @@ package dorian;
 
 import cli.CLIParser;
 import datastructure.*;
-import htsjdk.samtools.SAMFileHeader;
-import htsjdk.samtools.SAMRecord;
-import htsjdk.samtools.SamReader;
-import htsjdk.samtools.SamReaderFactory;
-import htsjdk.samtools.util.SamLocusIterator;
 import htsjdk.variant.variantcontext.VariantContext;
 import htsjdk.variant.vcf.*;
 import org.apache.logging.log4j.LogManager;
@@ -57,7 +52,7 @@ public class dorian {
         // Correction mode
         cor_mode = cli_parser.COR_MODE;
         // Damage profiles
-        if (cor_mode.needsCorrection()) {
+        if (cor_mode.needsDP()) {
             dp5 = cli_parser.DP5;
             dp3 = cli_parser.DP3;
         }

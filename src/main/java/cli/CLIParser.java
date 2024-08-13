@@ -5,8 +5,6 @@ import com.univocity.parsers.tsv.TsvParserSettings;
 import datastructure.CorrectionMode;
 import datastructure.Fasta;
 import datastructure.FastaIO;
-import htsjdk.samtools.SamReader;
-import htsjdk.samtools.SamReaderFactory;
 import org.apache.commons.cli.*;
 import org.apache.commons.io.FilenameUtils;
 
@@ -93,13 +91,8 @@ public class CLIParser {
             logger.info("BAM file:\t\t " + bam_file);
             file_logger.info("BAM file:\t\t\t" + bam_file);
             checkExistence(bam_file);
-
-            try (SamReader bamReader = SamReaderFactory.makeDefault().open(bam_file)) {
-                SAMPLE_NAME = FilenameUtils.removeExtension(bam_file.getName());
-                //BAM = bamReader;
-                BAM = bam_file;
-            }
-
+            SAMPLE_NAME = FilenameUtils.removeExtension(bam_file.getName());
+            BAM = bam_file;
         } catch (Exception e) {
             logger.error(e.getMessage());
             file_logger.error(e.getMessage());
@@ -142,7 +135,7 @@ public class CLIParser {
         }
 
         // Damage profiles
-        if (COR_MODE.needsCorrection()) {
+        if (COR_MODE.needsDP()) {
             try {
                 Path dp5_file = Paths.get(cmd.getOptionValue("dp5"));
                 Path dp3_file = Paths.get(cmd.getOptionValue("dp3"));
