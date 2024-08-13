@@ -5,7 +5,6 @@ import com.univocity.parsers.tsv.TsvParserSettings;
 import datastructure.CorrectionMode;
 import datastructure.Fasta;
 import datastructure.FastaIO;
-import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SamReader;
 import htsjdk.samtools.SamReaderFactory;
 import org.apache.commons.cli.*;
@@ -41,27 +40,25 @@ public class CLIParser {
     private final static String[] DP5_INPUT = new String[]{"dp5", "damageprofile5", "Path to DamageProfile of 5' end"};
     private final static String[] DP3_INPUT = new String[]{"dp3", "damageprofile3", "Path to DamageProfile of 3' end"};
     private final static String[] OUT_PATH = new String[]{"o", "out", "Path to output directory"};
-    private final static String[] COV1 = new String[]{"c1", "coverage1", "Minimum coverage for consensus calling (including N's)"};
-    private final static String[] COV2 = new String[]{"c2", "coverage2", "Minimum coverage for consensus calling (excluding N's)"};
-    private final static String[] FREQ = new String[]{"f", "minfreq", "Minimum frequency for consensus calling"};
+    private final static String[] COV = new String[]{"c", "coverage", "Minimum coverage for consensus calling"};
+    private final static String[] FREQ = new String[]{"f", "minfreq", "Minimum frequency for consensus calling (excluding N's)"};
     private final static String[] REF_FILE = new String[]{"r", "ref-file", "Reference genome"};
     private final static String[] COR = new String[]{"m", "mode", """
                                                                         Correction modes:
-                                                                        1=silence damage
-                                                                        2=weighted-correction w/o reference upvote
-                                                                        3=weighted-correction with reference upvote
-                                                                        4=no correction"""};
+                                                                        1=no correction
+                                                                        2=ref-based silencing
+                                                                        3=ref-free silencing
+                                                                        4=ref-free weighting"""};
 
 
     public CommandLine cmd;
-    public List<SAMRecord> BAM = new ArrayList<>();
+    public File BAM;
     public String SAMPLE_NAME;
     public CorrectionMode COR_MODE;
     public List<Double> DP5;
     public List<Double> DP3;
     public Path OUT;
-    public int MIN_COV1;
-    public int MIN_COV2;
+    public int MIN_COV;
     public double MIN_FREQ;
     public Fasta REF;
 
@@ -99,10 +96,8 @@ public class CLIParser {
 
             try (SamReader bamReader = SamReaderFactory.makeDefault().open(bam_file)) {
                 SAMPLE_NAME = FilenameUtils.removeExtension(bam_file.getName());
-                // Collect all records in bam file
-                for (SAMRecord bamRecord : bamReader) {
-                    BAM.add(bamRecord);
-                }
+                //BAM = bamReader;
+                BAM = bam_file;
             }
 
         } catch (Exception e) {
@@ -179,13 +174,9 @@ public class CLIParser {
 
         // Minimum coverage
         try {
-            MIN_COV1 = Integer.parseInt(cmd.getOptionValue("coverage1"));
-            logger.info("Minimum coverage (incl. N): " + MIN_COV1);
-            file_logger.info("Minimum coverage (incl. N):\t" + MIN_COV1);
-
-            MIN_COV2 = Integer.parseInt(cmd.getOptionValue("coverage2"));
-            logger.info("Minimum coverage (excl. N): " + MIN_COV2);
-            file_logger.info("Minimum coverage (excl. N):\t" + MIN_COV2);
+            MIN_COV = Integer.parseInt(cmd.getOptionValue("coverage"));
+            logger.info("Minimum coverage: " + MIN_COV);
+            file_logger.info("Minimum coverage:\t" + MIN_COV);
         } catch (Exception e) {
             logger.error("Coverage parameter must be an integer. Given: " + cmd.getOptionValue("coverage"));
             file_logger.error("Coverage parameter must be an integer. Given: " + cmd.getOptionValue("coverage"));
@@ -221,7 +212,7 @@ public class CLIParser {
      */
     private static void printHelp(Options options) {
         HelpFormatter formatter = new HelpFormatter();
-        formatter.printHelp("java -jar weighted-consensus-calling.jar [options]\n", options);
+        formatter.printHelp("java -jar dorian.jar [options]\n", options);
     }
 
     /**
@@ -273,19 +264,11 @@ public class CLIParser {
                 .build());
         op.addOption(Option.builder()
                 .argName("INT")
-                .option(COV1[0])
-                .longOpt(COV1[1])
+                .option(COV[0])
+                .longOpt(COV[1])
                 .hasArg()
                 .required(false)
-                .desc(COV1[2])
-                .build());
-        op.addOption(Option.builder()
-                .argName("INT")
-                .option(COV2[0])
-                .longOpt(COV2[1])
-                .hasArg()
-                .required(false)
-                .desc(COV2[2])
+                .desc(COV[2])
                 .build());
         op.addOption(Option.builder()
                 .argName("DOUBLE")
