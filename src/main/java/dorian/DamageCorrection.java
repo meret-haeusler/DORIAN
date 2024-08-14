@@ -1,11 +1,13 @@
 package dorian;
 
+import datastructure.DamageType;
 import datastructure.MappingPosition;
-import datastructure.VariantType;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+
+import static utils.ListCloner.cloneList;
 
 /**
  * Corrects damage in ancient DNA reads utilising the damage profiles of the 5' and 3' ends.
@@ -16,83 +18,78 @@ import java.util.List;
  */
 public class DamageCorrection {
 
-    public static ArrayList<MappingPosition> correctDamage(ArrayList<MappingPosition> mapping_reads, VariantType variant_type) {
-        ArrayList<MappingPosition> corrected_reads = VariantCalling.cloneList(mapping_reads);
+    /**
+     * Silences all forward mapping Ts (reverse mapping As) in a list of mapping reads
+     * @param mappingReads  List of mapping reads
+     * @param damType       Specification of damage type (CT or AG)
+     * @return  List of silenced reads
+     */
+    public static ArrayList<MappingPosition> silenceDamage(ArrayList<MappingPosition> mappingReads, DamageType damType) {
+        // Initialise output list
+        ArrayList<MappingPosition> silencedReads = cloneList(mappingReads);
 
-        // Initialise counter for REF upvote
-        Character compl_nuc = (variant_type.equals(VariantType.CT)) ? 'C' : 'G';
-        MappingPosition upvote_counter = new MappingPosition(compl_nuc, 0.0);
-
-
-        // Correct base at mapping position
-        for (MappingPosition cur_mp : corrected_reads) {
-            switch (dorian.cor_mode) {
-                // Correction Mode: Silence Damage
-                // Put 'N' instead of 'T' on forward reads (or 'A' on reverse reads)
-                case DAM_SIL:
-                    if (variant_type.equals(VariantType.CT) && cur_mp.base == 'T' && !cur_mp.is_reverse) {
-                        cur_mp.setBase('N');
-                    } else if (variant_type.equals(VariantType.GA) && cur_mp.base == 'A' && cur_mp.is_reverse) {
-                        cur_mp.setBase('N');
-                    }
-                    break;
-
-                // Correction Mode: Weighted Consensus Calling
-                // Down-weight 'T' on forward reads (or 'A' on reverse reads) by damage observed at the read position
-                case WCC:
-                    if (variant_type.equals(VariantType.CT) && cur_mp.base == 'T' && !cur_mp.is_reverse) {
-                        List<Double> dp = mapDamageToRead(cur_mp.read_length, dorian.dp5, dorian.dp3);
-                        double dam = dp.get(cur_mp.read_idx);
-                        double cor_weight = 1-dam;
-                        cur_mp.setWeight(cor_weight);
-
-                    } else if (variant_type.equals(VariantType.GA) && cur_mp.base == 'A' && cur_mp.is_reverse) {
-                        // Reverse damage profiles to match reverse reads
-                        List<Double> rev_dp5 = new ArrayList<>(List.copyOf(dorian.dp5));
-                        Collections.reverse(rev_dp5);
-                        List<Double> rev_dp3 = new ArrayList<>(List.copyOf(dorian.dp3));
-                        Collections.reverse(rev_dp3);
-
-                        List<Double> dp = mapDamageToRead(cur_mp.read_length, rev_dp3, rev_dp5);
-                        double dam = dp.get(cur_mp.read_idx);
-                        double cor_weight = 1-dam;
-                        cur_mp.setWeight(cor_weight);
-                    }
-                    break;
-
-                // Correction Mode: Weighted Consensus Calling with Upvote
-                // Down-weight 'T' on forward reads (or 'A' on reverse reads) by damage observed at the read position
-                // Up-weight REF allele by the same amount
-                case WCC_UPVOTE:
-                    if (variant_type.equals(VariantType.CT) && cur_mp.base == 'T' && !cur_mp.is_reverse) {
-                        List<Double> dp = mapDamageToRead(cur_mp.read_length, dorian.dp5, dorian.dp3);
-                        double dam = dp.get(cur_mp.read_idx);
-                        double cor_weight = 1-dam;
-                        cur_mp.setWeight(cor_weight);
-                        upvote_counter.addWeight(dam);
-
-                    } else if (variant_type.equals(VariantType.GA) && cur_mp.base == 'A' && cur_mp.is_reverse) {
-                        // Reverse damage profiles to match reverse reads
-                        List<Double> rev_dp5 = new ArrayList<>(List.copyOf(dorian.dp5));
-                        Collections.reverse(rev_dp5);
-                        List<Double> rev_dp3 = new ArrayList<>(List.copyOf(dorian.dp3));
-                        Collections.reverse(rev_dp3);
-
-                        List<Double> dp = mapDamageToRead(cur_mp.read_length, rev_dp3, rev_dp5);
-                        double dam = dp.get(cur_mp.read_idx);
-                        double cor_weight = 1-dam;
-                        cur_mp.setWeight(cor_weight);
-                        upvote_counter.addWeight(dam);
-                    }
-                    break;
+        // Iterate over all mapping positions
+        for (MappingPosition mp : silencedReads) {
+            //Silence position if..
+            if (damType.equals(DamageType.CT) && mp.base == 'T' && !mp.is_reverse) {
+                // ..base is forward mapping T
+                mp.setBase('N');
+            } else if (damType.equals(DamageType.GA) && mp.base == 'A' && mp.is_reverse) {
+                // ..base is reverse mapping A
+                mp.setBase('N');
             }
         }
 
-        // Add upvote counter to output (won't affect the result if cor_mode is not WCC_UPVOTE)
-        corrected_reads.add(upvote_counter);
-
-        return corrected_reads;
+        return silencedReads;
     }
+
+
+    /**
+     * Performs a damage-ware weighting of a read list. DamType specifies whether forward mapping Ts are down-weight
+     * and Cs are up-weight, or reverse mapping As are down-weight and Gs are up-weight.
+     * @param mappingReads  List of mapping reads
+     * @param damType       Specification of damage type (CT or AG)
+     * @return  List of reads with down-weighted forward mapping Ts (reverse mapping As) and up-voted Cs (Gs)
+     */
+    public static ArrayList<MappingPosition> weightDamage(ArrayList<MappingPosition> mappingReads, DamageType damType) {
+        // Initialise output list
+        ArrayList<MappingPosition> weightedReads = cloneList(mappingReads);
+
+        // Initialise counter for REF upvote
+        Character compl_nuc = (damType.equals(DamageType.CT)) ? 'C' : 'G';
+        MappingPosition upvote_counter = new MappingPosition(compl_nuc, 0.0);
+
+        // Iterate over mapping positions
+        for (MappingPosition mp : weightedReads) {
+            if (damType.equals(DamageType.CT) && mp.base == 'T' && !mp.is_reverse) {
+                List<Double> dp = mapDamageToRead(mp.read_length, dorian.dp5, dorian.dp3);
+                double dam = dp.get(mp.read_idx);
+                double cor_weight = 1 - dam;
+                mp.setWeight(cor_weight);
+                upvote_counter.addWeight(dam);
+
+            } else if (damType.equals(DamageType.GA) && mp.base == 'A' && mp.is_reverse) {
+                // Reverse damage profiles to match reverse reads
+                List<Double> rev_dp5 = new ArrayList<>(List.copyOf(dorian.dp5));
+                Collections.reverse(rev_dp5);
+                List<Double> rev_dp3 = new ArrayList<>(List.copyOf(dorian.dp3));
+                Collections.reverse(rev_dp3);
+
+                List<Double> dp = mapDamageToRead(mp.read_length, rev_dp3, rev_dp5);
+                double dam = dp.get(mp.read_idx);
+                double cor_weight = 1 - dam;
+                mp.setWeight(cor_weight);
+                upvote_counter.addWeight(dam);
+            }
+        }
+
+        //Add upvote counter to output
+        weightedReads.add(upvote_counter);
+
+        return weightedReads;
+    }
+
+
 
     /**
      * Maps the given damage profiles to the read characters
