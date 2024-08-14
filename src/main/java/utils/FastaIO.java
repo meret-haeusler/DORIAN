@@ -1,4 +1,6 @@
-package datastructure;
+package utils;
+
+import datastructure.Fasta;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
