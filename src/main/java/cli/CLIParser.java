@@ -4,7 +4,7 @@ import com.univocity.parsers.tsv.TsvParser;
 import com.univocity.parsers.tsv.TsvParserSettings;
 import datastructure.CorrectionMode;
 import datastructure.Fasta;
-import datastructure.FastaIO;
+import utils.FastaIO;
 import org.apache.commons.cli.*;
 import org.apache.commons.io.FilenameUtils;
 
