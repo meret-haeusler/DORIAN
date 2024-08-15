@@ -30,14 +30,12 @@ public class BaseCalling {
 
     /**
      * Builds a consensus_sequence and makes variant calls of a set of reads
-     *
      * @param reads      Bam file of reads
      * @param minCov     Minimal coverage for consensus calling
      * @param minFreq    Minimal frequency for consensus calling
      * @param ref        Fasta record for reference file
      * @param sampleName Name of sample
      * @return StringBuilder with consensus sequence and List of VariantContext for variant calls
-     * @throws IOException
      */
     public static ReturnTuple consensusCalling(File reads, int minCov, double minFreq,
                                                Fasta ref, String sampleName) throws IOException {
