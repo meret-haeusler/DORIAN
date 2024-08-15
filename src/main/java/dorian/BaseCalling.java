@@ -113,7 +113,7 @@ public class BaseCalling {
                     variantCalls.add(VariantCalling.makeVariantCall(cntBasesCor, ref, referencePosition, sampleName));
 
                     // Check if minimal frequency parameter is fulfilled, if not put call to 'N'
-                    if (maxFreq < minFreq) {
+                    if (maxFreq < minFreq || weightSum < minCov) {
                         maxBase = 'N';
                         maxFreq = -1.0;
                     }
