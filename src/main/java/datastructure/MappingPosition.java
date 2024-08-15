@@ -23,6 +23,14 @@ public class MappingPosition {
         this.weight = weight;
     }
 
+    /**
+     * Creates a MappingPosition object
+     * @param base          Character at read_idx in read
+     * @param read_idx      Index of base in read (0-based)
+     * @param read_length   Length of read
+     * @param is_reverse    False if read is forward mapping; True if read is reverse mapping
+     * @param weight        Weight of base contributing to base call
+     */
     public MappingPosition(Character base, int read_idx, int read_length, boolean is_reverse, double weight) {
         this.base = base;
         this.read_idx = read_idx;
