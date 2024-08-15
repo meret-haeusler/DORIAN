@@ -72,13 +72,13 @@ public class dorian {
             file_logger.info("CHROM\tPOS\tREF\tCOV\tALLELE_COUNTS\tBASE_CALL\tBASE_FREQ");
         }
         if (!cor_mode.equals(CorrectionMode.NO_COR)) {
-            file_logger.info("\nCorrected variants:");
+            file_logger.info("\nCorrected positions:");
             file_logger.info("CHROM\tPOS\tREF\tCOV\tALLELE_COUNTS_PRIOR\tALLELE_COUNTS_CORRECTED\tBASE_CALL\tBASE_FREQ");
 
             roi_tab.info("#CHROM=chromosome or scaffold name");
             roi_tab.info("#ROI_START=0-based start position of ROI");
             roi_tab.info("#ROI_END=1-based end position of ROI");
-            roi_tab.info("#CORRECTED_POS=1-based position of corrected variant");
+            roi_tab.info("#CORRECTED_POS=1-based position that were corrected");
             roi_tab.info("#CHROM\tROI_START\tROI_END\tCORRECTED_POS");
         }
 
@@ -106,8 +106,6 @@ public class dorian {
         VCFHeader vcf_header = VCFFileWriter.defaultHeader(ref, sample_name + "_" + cor_mode.getShortName());
         VCFFileWriter.writeVCFFile(vcf_out, vcf_header, variant_calls);
 
-
-        // OUTPUT INFO //
         // Move log file and ROI to output directory
         Files.move(Path.of("file.log"),
                 Path.of(out_path + "/" + time_stamp + "_" + sample_name + "_" + cor_mode.getShortName() + ".log"));
@@ -116,6 +114,8 @@ public class dorian {
                     Path.of(out_path + "/" + time_stamp + "_" + sample_name + "_" + cor_mode.getShortName() + ".bed"));
         }
 
+
+        // OUTPUT INFO //
         // Update status bar
         updatingMessage.interrupt();
         System.out.println("\rDORIAN completed successfully.\n");
