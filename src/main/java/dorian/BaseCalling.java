@@ -3,9 +3,7 @@ package dorian;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
 import datastructure.*;
-import htsjdk.samtools.SAMRecord;
-import htsjdk.samtools.SamReader;
-import htsjdk.samtools.SamReaderFactory;
+import htsjdk.samtools.*;
 import htsjdk.samtools.util.SamLocusIterator;
 import htsjdk.variant.variantcontext.VariantContext;
 import utils.DamageTypeGetter;
@@ -45,10 +43,15 @@ public class BaseCalling {
 
         // Iterate over bam file
         try (SamReader reader = SamReaderFactory.makeDefault().open(reads)) {
+
             // Initialize SamLocusIterator
             SamLocusIterator locusIterator = new SamLocusIterator(reader);
             // Iterate over each position
             for (SamLocusIterator.LocusInfo locusInfo : locusIterator) {
+                // Check if bam file end is reached
+                if (!isEndBamFile(reads, locusInfo)) {break;}
+
+                // Get reference position and initialise list for mapping reads
                 int referencePosition = locusInfo.getPosition();
                 ArrayList<MappingPosition> mappingReads = new ArrayList<>();
 
@@ -67,7 +70,7 @@ public class BaseCalling {
                     // Add variant object and make non-informative base call
                     variantCalls.add(VariantCalling.makeVariantCall(cntBases, ref, referencePosition, sampleName));
                     baseCall = 'N';
-
+                    // Create log entry if correction mode is 'no correction'
                     if (cor_mode.equals(CorrectionMode.NO_COR)) {
                         addLog(locusInfo, ref, mappingReads.size(), cntBases, cntBases, baseCall, -1.0);
                     }
@@ -196,6 +199,30 @@ public class BaseCalling {
 
         // Return most occurring base
         return max_base.iterator().next();
+    }
+
+
+    /**
+     * Checks for a given bam file and reference position if last BAM record is reached
+     * @param bamFile   File path to bam file
+     * @param refInfo   Current reference position
+     * @return  Boolean if last BAM record is reached
+     */
+    private static Boolean isEndBamFile(File bamFile, SamLocusIterator.LocusInfo refInfo) {
+        // Create reader for bam file
+        try (SamReader reader = SamReaderFactory.makeDefault().open(bamFile)) {
+            // Define interval that should be checked for mapping reads
+            QueryInterval queryInterval = new QueryInterval(refInfo.getSequenceIndex(),
+                    refInfo.getPosition(), refInfo.getSequenceLength());
+            QueryInterval[] queryIntervalArr = {queryInterval};
+            SAMRecordIterator iterator = reader.queryOverlapping(queryIntervalArr);
+
+            // Return whether there are mapping reads in interval
+            return iterator.hasNext();
+
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
 }
