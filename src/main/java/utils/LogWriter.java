@@ -12,8 +12,6 @@ import static dorian.dorian.*;
 
 public class LogWriter {
 
-    private static final DecimalFormat df = new DecimalFormat("####0.00");
-
     /**
      * Adds a line to the log file documenting the determination of a base call
      * @param refInfo   Information on the current reference position
@@ -37,11 +35,11 @@ public class LogWriter {
         // Corrected:   CHROM POS REF COV ALLELE_COUNTS_PRIOR ALLELE_COUNTS_CORRECTED BASE_CALL BASE_FREQ
         if (cor_mode.equals(CorrectionMode.NO_COR)) {
             file_logger.info("{}\t{}\t{}\t{}\t{}\t{}\t{}",
-                    chrom, refPos, refBase, cov, MapToString(cnts), call, df.format(callFreq));
+                    chrom, refPos, refBase, cov, MapToString(cnts), call, callFreq);
         } else {
             // Log file
             file_logger.info("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}",
-                    chrom, refPos, refBase, cov, MapToString(cnts), MapToString(cntsCor), call, df.format(callFreq));
+                    chrom, refPos, refBase, cov, MapToString(cnts), MapToString(cntsCor), call, callFreq);
 
             // ROI file
             int roi_start = Math.max(refPos - 3, 0);
