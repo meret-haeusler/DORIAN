@@ -7,6 +7,12 @@ import java.util.List;
 
 public class DamageTypeGetter {
 
+    /**
+     * Determine if a position needs correction and which type of damage is present
+     * @param mappingReads  List of MappingPositions
+     * @param refBase       Base of reference sequence at given position
+     * @return  DamageType for the given data
+     */
     public static DamageType getDamageTypeRefbased(List<MappingPosition> mappingReads, char refBase) {
         boolean T_forward = false;
         boolean A_reverse = false;
@@ -30,9 +36,9 @@ public class DamageTypeGetter {
         }
     }
 
+
     /**
      * Determines if a position is damaged and which damage pattern is present
-     *
      * @param mappingReads Mapping reads
      * @return DamageType
      */
