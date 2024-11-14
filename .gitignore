@@ -1,5 +1,7 @@
 ### Custom ###
+poster/
 test_out/
+notes.md
 
 target/
 !.mvn/wrapper/maven-wrapper.jar
