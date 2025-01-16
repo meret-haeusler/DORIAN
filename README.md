@@ -1,5 +1,5 @@
 ## DORIAN
-DORAIN (**D**amage-aware gen**O**me **R**econstruct**I**on for **AN**cient data) is a genome reconstruction tool designed for ancient data. DORIAN implements  three damage-aware reconstruction methods where positions that show ancient specific damage patterns are corrected prior to base calling. 
+DORIAN (**D**amage-aware gen**O**me **R**econstruct**I**on for **AN**cient data) is a genome reconstruction tool designed for ancient data. DORIAN implements  three damage-aware reconstruction methods where positions that show ancient specific damage patterns are corrected prior to base calling. 
 
 * Reference-based Silencing identifies damaged positions using the reference sequence and replaces damaged bases with a non-informative base call.
 * Reference-free Silencing identifies damages positions by specific damage patterns in the mapping reads and replaces the damaged bases with a non-informative base call.
