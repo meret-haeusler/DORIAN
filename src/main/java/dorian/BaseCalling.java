@@ -14,6 +14,7 @@ import java.io.IOException;
 import java.util.*;
 
 import static dorian.dorian.cor_mode;
+import static dorian.dorian.dam_det;
 import static utils.LogWriter.addLog;
 
 /**
@@ -36,7 +37,7 @@ public class BaseCalling {
      * @return StringBuilder with consensus sequence and List of VariantContext for variant calls
      */
     public static ReturnTuple consensusCalling(File reads, int minCov, double minFreq,
-                                               Fasta ref, String sampleName) throws IOException {
+                                               Fasta ref, String sampleName, Boolean vcf) throws IOException {
         // Initialise output
         StringBuilder consensusSequence = new StringBuilder();
         List<VariantContext> variantCalls = new ArrayList<>();
@@ -67,8 +68,10 @@ public class BaseCalling {
 
                 // Check if coverage parameter is fulfilled
                 if (mappingReads.size() < minCov) {
-                    // Add variant object and make non-informative base call
-                    variantCalls.add(VariantCalling.makeVariantCall(cntBases, ref, referencePosition, sampleName));
+                    if (vcf) {
+                        // Add variant object and make non-informative base call
+                        variantCalls.add(VariantCalling.makeVariantCall(cntBases, ref, referencePosition, sampleName));
+                    }
                     baseCall = 'N';
                     // Create log entry if correction mode is 'no correction'
                     if (cor_mode.equals(CorrectionMode.NO_COR)) {
@@ -76,11 +79,10 @@ public class BaseCalling {
                     }
                 } else {
                     // Determine if correction is necessary
-                    DamageType damPos = switch (cor_mode) {
+                    DamageType damPos = switch (dam_det) {
                         case NO_COR -> DamageType.NONE;
-                        case REFBASED_SIL ->
-                                DamageTypeGetter.getDamageTypeRefbased(mappingReads, ref.getSequence().charAt(referencePosition - 1));
-                        case REFFREE_SIL, REFFREE_WEI -> DamageTypeGetter.getDamageTypeReffree(mappingReads);
+                        case BASED -> DamageTypeGetter.getDamageTypeRefbased(mappingReads, ref.getSequence().charAt(referencePosition - 1));
+                        case FREE -> DamageTypeGetter.getDamageTypeReffree(mappingReads);
                     };
 
                     // Create new instance for corrected reads
@@ -89,13 +91,13 @@ public class BaseCalling {
                         //If no correction is necessary, copy inital read set
                         mappingReadsCor = ListCloner.cloneList(mappingReads);
                     } else {
-                        if (!cor_mode.needsDP()) {
-                            //If correction mode is Refbased or Reffree Silencing, silence forward mapping Ts (reverse mapping As)
-                            mappingReadsCor = DamageCorrection.silenceDamage(mappingReads, damPos);
-                        } else {
-                            //If correction mode is Reffree Weighting, down-weight forward mapping Ts (reverse mapping As) / up-weight Cs (Gs)
-                            mappingReadsCor = DamageCorrection.weightDamage(mappingReads, damPos);
-                        }
+                        mappingReadsCor = switch (cor_mode) {
+                            case NO_COR -> ListCloner.cloneList(mappingReads);
+                            //If correction mode is Silencing, silence forward mapping Ts (reverse mapping As)
+                            case SILENCING -> DamageCorrection.silenceDamage(mappingReads, damPos);
+                            //If correction mode is Weighting, down-weight forward mapping Ts (reverse mapping As) / up-weight Cs (Gs)
+                            case WEIGHTING -> DamageCorrection.weightDamage(mappingReads, damPos);
+                        };
                     }
 
                     // Count base occurrences after correction
@@ -109,8 +111,10 @@ public class BaseCalling {
                     double weightSum = sumHashmapValues(cntBasesCor);
                     double maxFreq = maxCount / weightSum;
 
-                    // Add variant object from corrected calls
-                    variantCalls.add(VariantCalling.makeVariantCall(cntBasesCor, ref, referencePosition, sampleName));
+                    if (vcf) {
+                        // Add variant object from corrected calls
+                        variantCalls.add(VariantCalling.makeVariantCall(cntBasesCor, ref, referencePosition, sampleName));
+                    }
 
                     // Check if minimal frequency parameter is fulfilled, if not put call to 'N'
                     if (maxFreq < minFreq || weightSum < minCov) {

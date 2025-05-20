@@ -92,31 +92,33 @@ public class DamageCorrection {
 
 
     /**
+     * TODO:
      * Maps the given damage profiles to the read characters
      *
-     * @param read_length Read length
+     * @param readLength Read length
      * @param dp5  Damage profile of 5' end
      * @param dp3  Damage profile of 3' end
-     * @return Tuple with read string and mapped damage profile as list
+     * @return List of merged damage profiles to read length
      */
-    private static List<Double> mapDamageToRead(int read_length, List<Double> dp5, List<Double> dp3) {
+    private static List<Double> mapDamageToRead(int readLength, List<Double> dp5, List<Double> dp3) {
         // Initialise damage list
-        List<Double> dam_list = new ArrayList<>(List.copyOf(dp5));
+        List<Double> result = new ArrayList<>(Collections.nCopies(readLength, 0.0));
 
-        // Check if damage profiles overlap in read
-        int overlap = read_length - (dp5.size() + dp3.size());
+        // Number of elements to take from dp5 and dp3
+        int fromDp5 = Math.min((readLength + 1) / 2, dp5.size()); // ceil
+        int fromDp3 = Math.min(readLength - fromDp5, dp3.size()); // rest from dp3
 
-        // If damage profiles overlap --> Merge damage profiles to read length
-        if (overlap <= 0) {
-            dam_list.addAll(dp3.subList(Math.abs(overlap), dp3.size()));
-
-        } else {
-            // Else --> Fill uncovered nucleotides with damage = 0
-            dam_list.addAll(Collections.nCopies(Math.abs(overlap), 0.0));
-            dam_list.addAll(dp3);
+        // Fill from dp5
+        for (int i = 0; i < fromDp5; i++) {
+            result.set(i, dp5.get(i));
         }
 
-        return dam_list;
+        // Fill from dp3
+        for (int i = 0; i < fromDp3; i++) {
+            result.set(readLength - fromDp3 + i, dp3.get(dp3.size() - fromDp3 + i));
+        }
+
+        return result;
     }
 
 }

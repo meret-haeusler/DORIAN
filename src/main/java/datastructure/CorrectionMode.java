@@ -2,9 +2,8 @@ package datastructure;
 
 public enum CorrectionMode {
     NO_COR("no correction", "no-cor"),
-    REFBASED_SIL("reference-based silencing", "ref-based_sil"),
-    REFFREE_SIL("reference-free silencing", "ref-free_sil"),
-    REFFREE_WEI("reference-free weighting", "ref-free_weighting")
+    SILENCING("silencing", "sil"),
+    WEIGHTING("weighting", "wei")
     ;
 
     private final String mode_name;
@@ -21,10 +20,6 @@ public enum CorrectionMode {
 
     public String getShortName() {
         return short_name;
-    }
-
-    public boolean needsDP(){
-        return equals(REFFREE_WEI);
     }
 
 }
