@@ -63,7 +63,7 @@ public class CLIParser {
             if (!cmd.hasOption(BAM_INPUT[1]) || !cmd.hasOption(OUTPUT_DIR[1]) || !cmd.hasOption(REFERENCE[1]) || !cmd.hasOption(CORRECTION_MODE[1])) {
 
                 if (!cmd.hasOption(COV[1]) || !cmd.hasOption(FREQ[1])) {
-                    System.err.println("Error: Coverage and Frequency files are required.");
+                    System.err.println("Error: Coverage and Frequency values are required.");
                     formatter.printHelp("dorian", options);
                     System.exit(1);
                 }

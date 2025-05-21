@@ -33,7 +33,7 @@ import static dorian.BaseCalling.consensusCalling;
  */
 public class dorian {
     public static Logger logger = LogManager.getLogger(dorian.class.getName());
-    public static Logger file_logger = LogManager.getLogger("file." + dorian.class.getName());
+    public static Logger file_logger;
     public static Logger roi_tab;
     public static DetectionMode dam_det;
     public static CorrectionMode cor_mode;
@@ -48,9 +48,9 @@ public class dorian {
         Date log_date = new Date();
         String time_stamp = new SimpleDateFormat("yyyy-MM-dd_HH-mm-ss").format(log_date);
         logger.info("Starting DORIAN\n");
-        file_logger.info("DORIAN – REPORT\nRun: {}\n", new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(log_date));
 
         CommandLine cmd = CLIParser.parseArguments(args);
+
 
         try {
             // PARSING INPUT FILES //
@@ -82,9 +82,12 @@ public class dorian {
             // Sample name
             String sample_name = FilenameUtils.removeExtension(reads.getName());
 
+            // LOG FILE PARSING //
+            writeCLItoLog(logger, cmd);
 
             // PREPARE LOG FILES //
-            writeCLItoLog(logger, cmd);
+            file_logger = LogManager.getLogger("file." + dorian.class.getName());
+            file_logger.info("DORIAN – REPORT\nRun: {}\n", new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(log_date));
             writeCLItoLog(file_logger, cmd);
 
             if (cor_mode.equals(CorrectionMode.NO_COR)) {
