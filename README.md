@@ -17,21 +17,27 @@ java -jar <path/to/file>DORIAN.jar [options]
  -h,--help                      Print help message
 
  -b,--bam <FILE>                BAM file of mapped reads
- -r,--ref-file <FILE>           Reference genome
+ -r,--reference <FILE>          Reference genome
  -o,--out <PATH>                Path to output directory
 
- -c,--coverage <INT>            Minimum coverage for consensus calling
- -f,--minfreq <DOUBLE>          Minimum frequency for consensus calling
+ -c,--cov <INT>                 Minimum coverage for consensus calling
+ -f,--freq <DOUBLE>             Minimum frequency for consensus calling
 
- -m,--mode <INT>                Correction modes:
-                                1=no correction
-                                2=ref-based silencing
-                                3=ref-free silencing
-                                4=ref-free weighting
+--correction <STRING>           Damage correction mode: 
+                                    s (Silencing)
+                                    w (Weighting)
+                                    nc (no correction)
+--detection <STRING>            Damage detection mode (only for correction modes s and w):
+                                    pb (Polarization-Based)
+                                    pf (Polarization-Free)  
 
- Only for ref-free weighting:                               
- -dp3,--damageprofile3 <FILE>   Path to DamageProfile of 3' end
- -dp5,--damageprofile5 <FILE>   Path to DamageProfile of 5' end
+ Only for correction mode w:                               
+ --dp3 <FILE>                   Path to DamageProfile of 3' end
+ --dp5 <FILE>                   Path to DamageProfile of 5' end
+ 
+ Optional:
+ --bed                          Writes a BED file to --out
+ --vcf                          Writes a VCF file to --out
 `````
 
 ## Output Files
