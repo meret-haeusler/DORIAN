@@ -8,7 +8,6 @@ import datastructure.ReturnTuple;
 import htsjdk.variant.variantcontext.VariantContext;
 import htsjdk.variant.vcf.VCFHeader;
 import org.apache.commons.cli.CommandLine;
-import org.apache.commons.cli.Option;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -49,23 +48,21 @@ public class dorian {
         Date log_date = new Date();
         String time_stamp = new SimpleDateFormat("yyyy-MM-dd_HH-mm-ss").format(log_date);
         logger.info("Starting DORIAN\n");
-        file_logger.info("DORIAN – REPORT\nRun: "
-                + new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(log_date) + "\n");
+        file_logger.info("DORIAN – REPORT\nRun: {}\n", new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(log_date));
 
         CommandLine cmd = CLIParser.parseArguments(args);
 
         try {
             // PARSING INPUT FILES //
             InputValidationService.validateInputs(cmd);
-            logger.info("All inputs validated successfully.");
 
             // BAM file
             File reads = new File(cmd.getOptionValue("bam"));
-            // TODO: Correction mode
-            cor_mode = CorrectionMode.valueOf(cmd.getOptionValue("correction"));
+            // Correction mode
+            cor_mode = CorrectionMode.fromShortName(cmd.getOptionValue("correction"));
             // Damage detection
             if (!cor_mode.equals(CorrectionMode.NO_COR)) {
-                dam_det = DetectionMode.valueOf(cmd.getOptionValue("detection"));
+                dam_det = DetectionMode.fromShortName(cmd.getOptionValue("detection"));
             } else {
                 dam_det = DetectionMode.NO_COR;
             }
@@ -85,22 +82,11 @@ public class dorian {
             // Sample name
             String sample_name = FilenameUtils.removeExtension(reads.getName());
 
-            logger.info("Parsed arguments:");
-            for (Option optionName : cmd.getOptions()) {
-                String value = cmd.getOptionValue(optionName.getLongOpt());
-                if (value != null) {
-                    logger.info("--{}:\t{}", optionName.getLongOpt(), value);
-                    file_logger.info("--{}:\t{}", optionName.getLongOpt(), value);
-                } else {
-                    logger.info("--{}\t(flag set)", optionName.getLongOpt());
-                    file_logger.info("--{}\t(flag set)", optionName.getLongOpt());
-                }
-            }
-            logger.info("Analysis started successfully with valid input arguments.");
-
-
 
             // PREPARE LOG FILES //
+            writeCLItoLog(logger, cmd);
+            writeCLItoLog(file_logger, cmd);
+
             if (cor_mode.equals(CorrectionMode.NO_COR)) {
                 file_logger.info("\nCalls:");
                 file_logger.info("CHROM\tPOS\tREF\tCOV\tALLELE_COUNTS\tBASE_CALL\tBASE_FREQ");
@@ -118,6 +104,7 @@ public class dorian {
                 roi_tab.info("#CHROM\tROI_START\tROI_END\tCORRECTED_POS");
             }
 
+            logger.info("Analysis started successfully with valid input arguments.");
 
             // ADD STATUS BAR //
             // Start the updating message in a separate thread
@@ -133,40 +120,42 @@ public class dorian {
 
             // OUTPUT //
             updatingMessage.interrupt();
-            System.out.println("\rDORIAN completed successfully.\n");
+            logger.info("\rDORIAN completed successfully.\n");
             logger.info("Result files:");
 
             // Define Fasta output
-            Fasta consensus_record = new Fasta(">" + sample_name + "_" + cor_mode.getShortName(), consensus_sequence.toString());
-            String fasta_path = out_path.toString() + "/" + sample_name + "_" + cor_mode.getShortName() + ".fasta";
+            String method = cor_mode.equals(CorrectionMode.NO_COR)
+                ? cor_mode.getModeName()
+                : dam_det.getDetectionMode() + "-" + cor_mode.getModeName();
+            Fasta consensus_record = new Fasta(">" + sample_name + "_" + method, consensus_sequence.toString());
+            String fasta_path = out_path + "/" + sample_name + "_" + method + ".fasta";
             FastaIO.writeFasta(consensus_record, fasta_path);
-            logger.info("Reconstructed genome written to: " + fasta_path);
+            logger.info("Reconstructed genome written to: {}", fasta_path);
 
             // Move log file to output directory
             Files.move(Path.of("file.log"),
-                    Path.of(out_path + "/" + time_stamp + "_" + sample_name + "_" + cor_mode.getShortName() + ".log"));
-            logger.info("Log file written to: " + out_path + "/" + time_stamp + "_" + sample_name + "_" + cor_mode.getShortName() + ".log");
+                    Path.of(out_path + "/" + time_stamp + "_" + sample_name + "_" + method + ".log"));
+            logger.info("Log file written to: {}/{}_{}_{}.log", out_path, time_stamp, sample_name, method);
 
             // Define vcf output
             if (cmd.hasOption("vcf")) {
-                String vcf_out = out_path + "/" + sample_name + "_" + cor_mode.getShortName() + ".vcf";
-                VCFHeader vcf_header = VCFFileWriter.defaultHeader(ref, sample_name + "_" + cor_mode.getShortName());
+                String vcf_out = out_path + "/" + sample_name + "_" + method + ".vcf";
+                VCFHeader vcf_header = VCFFileWriter.defaultHeader(ref, sample_name + "_" + method, method);
                 VCFFileWriter.writeVCFFile(vcf_out, vcf_header, variant_calls);
-                logger.info("Corrected variants written to: " + vcf_out);
+                logger.info("Corrected variants written to: {}", vcf_out);
             }
 
             // Define bed output
             if (cmd.hasOption("bed")) {
                 Files.move(Path.of("roi.bed"),
-                        Path.of(out_path + "/" + time_stamp + "_" + sample_name + "_" + cor_mode.getShortName() + ".bed"));
-                logger.info("ROI table (IGV format) for corrected variants written to: " +
-                        out_path + "/" + time_stamp + "_" + sample_name + "_" + cor_mode.getShortName() + ".bed");
+                        Path.of(out_path + "/" + time_stamp + "_" + sample_name + "_" + method + ".bed"));
+                logger.info("ROI table (IGV format) for corrected variants written to: {}/{}_{}_{}.bed", out_path, time_stamp, sample_name, cor_mode.getShortName());
             }
 
 
 
         } catch (Exception e) {
-            logger.error("Runtime error: " + e.getMessage());
+            logger.error("Runtime error: {}", e.getMessage());
             System.exit(1);
         }
     }
@@ -195,5 +184,22 @@ public class dorian {
 
         updatingMessage.start();
         return updatingMessage;
+    }
+
+    private static void writeCLItoLog(Logger log, CommandLine cmd) {
+        log.info("Parsed arguments:");
+        log.info("BAM file:              \t{}", cmd.getOptionValue("bam"));
+        log.info("Reference file:        \t{}", cmd.getOptionValue("reference"));
+        log.info("Output directory:      \t{}", cmd.getOptionValue("out"));
+        log.info("Minimum coverage:      \t{}", cmd.getOptionValue("cov"));
+        log.info("Minimum frequency:     \t{}", cmd.getOptionValue("freq"));
+        if (!cor_mode.equals(CorrectionMode.NO_COR)) {
+            log.info("Damage Detection mode:\t{}", dam_det.getDetectionMode());
+        }
+        log.info("Damage Correction mode:\t{}", cor_mode.getModeName());
+        if (cor_mode.equals(CorrectionMode.WEIGHTING)) {
+            log.info("Damage profiles:      \t{}", cmd.getOptionValue("dp5"));
+            log.info("                      \t{}", cmd.getOptionValue("dp3"));
+        }
     }
 }

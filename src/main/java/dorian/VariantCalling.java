@@ -1,6 +1,7 @@
 package dorian;
 
 import datastructure.AlleleCount;
+import datastructure.CorrectionMode;
 import datastructure.Fasta;
 import htsjdk.variant.variantcontext.Allele;
 import htsjdk.variant.variantcontext.GenotypeBuilder;
@@ -14,6 +15,7 @@ import java.util.Map;
 import java.util.stream.IntStream;
 
 import static dorian.dorian.cor_mode;
+import static dorian.dorian.dam_det;
 
 public class VariantCalling {
 
@@ -30,8 +32,12 @@ public class VariantCalling {
 
         AlleleCount alleles_counts = getAlleleCounts(baseFreq, ref.getSequence().charAt(ref_pos - 1));
 
+        String method = cor_mode.equals(CorrectionMode.NO_COR)
+                ? cor_mode.getModeName()
+                : dam_det.getDetectionMode() + "-" + cor_mode.getModeName();
+
         // Build Genotype from base_counts
-        GenotypeBuilder genotype = new GenotypeBuilder(sample_name + "_" + cor_mode.getShortName());
+        GenotypeBuilder genotype = new GenotypeBuilder(sample_name + "_" + method);
         genotype.alleles(alleles_counts.getAlleles());
         genotype.AD(alleles_counts.getCounts());
         genotype.DP(IntStream.of(alleles_counts.getCounts()).sum());

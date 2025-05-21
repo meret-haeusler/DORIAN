@@ -2,8 +2,8 @@ package datastructure;
 
 public enum DetectionMode {
     NO_COR("no correction", "no-cor"),
-    BASED("Polarization-Based", "based"),
-    FREE("Polarization-Free", "free")
+    BASED("Polarization-Based", "pb"),
+    FREE("Polarization-Free", "pf")
     ;
 
     private final String detectionMode;
@@ -20,5 +20,14 @@ public enum DetectionMode {
 
     public String getDetectionModeShort() {
         return detectionModeShort;
+    }
+
+    public static DetectionMode fromShortName(String short_name) {
+        for (DetectionMode mode : DetectionMode.values()) {
+            if (mode.getDetectionModeShort().equals(short_name)) {
+                return mode;
+            }
+        }
+        throw new IllegalArgumentException("No DetectionMode found for short name: " + short_name);
     }
 }

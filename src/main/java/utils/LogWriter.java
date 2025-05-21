@@ -5,6 +5,8 @@ import datastructure.Fasta;
 import htsjdk.samtools.util.SamLocusIterator;
 
 import java.text.DecimalFormat;
+import java.text.DecimalFormatSymbols;
+import java.util.Locale;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -42,9 +44,11 @@ public class LogWriter {
                     chrom, refPos, refBase, cov, MapToString(cnts), MapToString(cntsCor), call, callFreq);
 
             // ROI file
-            int roi_start = Math.max(refPos - 3, 0);
-            int roi_end = Math.min(refPos + 2, ref.getSequence().length());
-            roi_tab.info("{}\t{}\t{}\tCORRECTED_POS:{}", chrom, roi_start, roi_end, refPos);
+            if (roi_tab != null) {
+                int roi_start = Math.max(refPos - 3, 0);
+                int roi_end = Math.min(refPos + 2, ref.getSequence().length());
+                roi_tab.info("{}\t{}\t{}\tCORRECTED_POS:{}", chrom, roi_start, roi_end, refPos);
+            }
         }
     }
 
@@ -56,7 +60,7 @@ public class LogWriter {
      * @return String of allele counts
      */
     private static String MapToString(Map<Character, Double> map) {
-        DecimalFormat df = new DecimalFormat("#.##");
+        DecimalFormat df = new DecimalFormat("#.##", DecimalFormatSymbols.getInstance(Locale.US));
         return map.keySet().stream()
                 .map(key -> key + "=" + df.format(map.get(key)))
                 .collect(Collectors.joining(","));

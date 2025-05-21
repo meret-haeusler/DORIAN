@@ -92,7 +92,6 @@ public class DamageCorrection {
 
 
     /**
-     * TODO:
      * Maps the given damage profiles to the read characters
      *
      * @param readLength Read length

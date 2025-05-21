@@ -2,9 +2,6 @@ package cli;
 
 import org.apache.commons.cli.*;
 
-import static dorian.dorian.file_logger;
-import static dorian.dorian.logger;
-
 
 /**
  * Command line parser
@@ -23,8 +20,8 @@ public class CLIParser {
     private final static String[] BAM_INPUT = new String[]{"b", "bam", "BAM file of mapped reads"};
     private final static String[] OUTPUT_DIR = new String[]{"o", "out", "Output directory"};
     private final static String[] REFERENCE = new String[]{"r", "reference", "FASTA reference file"};
-    private final static String[] DETECTION_MODE = new String[]{null, "detection", "Damage detection mode: pb (Polarisation-Based) or pf (Polarisation-Free)"};
-    private final static String[] CORRECTION_MODE = new String[]{null, "correction", "Damage correction mode: s (silencing), w (weighting), or nc (no correction)"};
+    private final static String[] DETECTION_MODE = new String[]{null, "detection", "Damage detection mode (only required if correction is s or w):\npb (Polarization-Based) or pf (Polarization-Free)"};
+    private final static String[] CORRECTION_MODE = new String[]{null, "correction", "Damage correction mode: s (Silencing), w (Weighting), or nc (no correction)"};
     private final static String[] VCF_OUTPUT = new String[]{null, "vcf", "Generate VCF output"};
     private final static String[] BED_OUTPUT = new String[]{null, "bed", "Generate BED output"};
     private final static String[] COV = new String[]{"c", "cov", "Coverage (integer)"};
@@ -65,19 +62,19 @@ public class CLIParser {
 
             if (!cmd.hasOption(BAM_INPUT[1]) || !cmd.hasOption(OUTPUT_DIR[1]) || !cmd.hasOption(REFERENCE[1]) || !cmd.hasOption(CORRECTION_MODE[1])) {
 
-            if (!cmd.hasOption(COV[1]) || !cmd.hasOption(FREQ[1])) {
-                System.err.println("Error: Coverage and Frequency files are required.");
-                formatter.printHelp("dorian", options);
-                System.exit(1);
-            }
-
-            String correction = cmd.getOptionValue(CORRECTION_MODE[1]);
-            if (correction.equals("w")) {
-                if (!cmd.hasOption(DP5_INPUT[1]) || !cmd.hasOption(DP3_INPUT[1])) {
-                    System.err.println("Error: DP5 and DP3 files are required when correction mode is 'w'.");
+                if (!cmd.hasOption(COV[1]) || !cmd.hasOption(FREQ[1])) {
+                    System.err.println("Error: Coverage and Frequency files are required.");
+                    formatter.printHelp("dorian", options);
                     System.exit(1);
                 }
-            }
+
+                String correction = cmd.getOptionValue(CORRECTION_MODE[1]);
+                if (correction.equals("w")) {
+                    if (!cmd.hasOption(DP5_INPUT[1]) || !cmd.hasOption(DP3_INPUT[1])) {
+                        System.err.println("Error: DP5 and DP3 files are required when correction mode is 'w'.");
+                        System.exit(1);
+                    }
+                }
 
                 System.err.println("Error: Required arguments are missing.");
                 formatter.printHelp("dorian", options);
