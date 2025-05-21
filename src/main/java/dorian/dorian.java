@@ -1,10 +1,7 @@
 package dorian;
 
 import cli.CLIParser;
-import datastructure.CorrectionMode;
-import datastructure.DetectionMode;
-import datastructure.Fasta;
-import datastructure.ReturnTuple;
+import datastructure.*;
 import htsjdk.variant.variantcontext.VariantContext;
 import htsjdk.variant.vcf.VCFHeader;
 import org.apache.commons.cli.CommandLine;
@@ -82,7 +79,7 @@ public class dorian {
             // Sample name
             String sample_name = FilenameUtils.removeExtension(reads.getName());
 
-            // LOG FILE PARSING //
+            // LOG: FILE PARSING //
             writeCLItoLog(logger, cmd);
 
             // PREPARE LOG FILES //
@@ -116,9 +113,9 @@ public class dorian {
 
             // MAIN PROGRAMME //
             //Add BaseCalling call and resolve returns
-            ReturnTuple BaseCallingOut = consensusCalling(reads, cov, freq, ref, sample_name, cmd.hasOption("vcf"));
-            StringBuilder consensus_sequence = BaseCallingOut.getSeq();
-            List<VariantContext> variant_calls = BaseCallingOut.getVariants();
+            Tuple<StringBuilder, List<VariantContext>> BaseCallingOut = consensusCalling(reads, cov, freq, ref, sample_name, cmd.hasOption("vcf"));
+            StringBuilder consensus_sequence = BaseCallingOut.getFirst();
+            List<VariantContext> variant_calls = BaseCallingOut.getSecond();
 
 
             // OUTPUT //

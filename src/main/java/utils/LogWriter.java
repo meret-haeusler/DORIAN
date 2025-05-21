@@ -16,32 +16,31 @@ public class LogWriter {
 
     /**
      * Adds a line to the log file documenting the determination of a base call
-     * @param refInfo   Information on the current reference position
      * @param ref       Reference as fasta object
+     * @param refPos    Reference position (0-based)
      * @param cov       Observed read coverage at the position
      * @param cnts      Base counts before correction
      * @param cntsCor   Base counts after correction
      * @param call      Final base call
      * @param callFreq  Frequency of final base call (-1 if call is 'N')
      */
-    public static void addLog(SamLocusIterator.LocusInfo refInfo, Fasta ref, int cov, Map<Character, Double> cnts,
+    public static void addLog(Fasta ref, int refPos, int cov, Map<Character, Double> cnts,
                               Map<Character, Double> cntsCor, Character call, Double callFreq) {
 
         // Get reference infos
-        String chrom = refInfo.getSequenceName();
-        int refPos = refInfo.getPosition();
-        char refBase = ref.getSequence().charAt(refPos-1);
+        String chrom = ref.getHeader();
+        char refBase = ref.getSequence().charAt(refPos);
 
         // Add to log file
         // Uncorrected: CHROM POS REF COV ALLELE_COUNTS BASE_CALL BASE_FREQ
         // Corrected:   CHROM POS REF COV ALLELE_COUNTS_PRIOR ALLELE_COUNTS_CORRECTED BASE_CALL BASE_FREQ
         if (cor_mode.equals(CorrectionMode.NO_COR)) {
             file_logger.info("{}\t{}\t{}\t{}\t{}\t{}\t{}",
-                    chrom, refPos, refBase, cov, MapToString(cnts), call, callFreq);
+                    chrom, refPos+1, refBase, cov, MapToString(cnts), call, callFreq);
         } else {
             // Log file
             file_logger.info("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}",
-                    chrom, refPos, refBase, cov, MapToString(cnts), MapToString(cntsCor), call, callFreq);
+                    chrom, refPos+1, refBase, cov, MapToString(cnts), MapToString(cntsCor), call, callFreq);
 
             // ROI file
             if (roi_tab != null) {

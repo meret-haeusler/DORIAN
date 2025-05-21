@@ -4,7 +4,7 @@ import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
 import datastructure.*;
 import htsjdk.samtools.*;
-import htsjdk.samtools.util.SamLocusIterator;
+import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.variant.variantcontext.VariantContext;
 import utils.DamageTypeGetter;
 import utils.ListCloner;
@@ -29,6 +29,7 @@ public class BaseCalling {
 
     /**
      * Builds a consensus_sequence and makes variant calls of a set of reads
+     *
      * @param reads      Bam file of reads
      * @param minCov     Minimal coverage for consensus calling
      * @param minFreq    Minimal frequency for consensus calling
@@ -36,107 +37,134 @@ public class BaseCalling {
      * @param sampleName Name of sample
      * @return StringBuilder with consensus sequence and List of VariantContext for variant calls
      */
-    public static ReturnTuple consensusCalling(File reads, int minCov, double minFreq,
-                                               Fasta ref, String sampleName, Boolean vcf) throws IOException {
+    public static Tuple<StringBuilder, List<VariantContext>> consensusCalling(File reads, int minCov, double minFreq,
+                                                                              Fasta ref, String sampleName, Boolean vcf) throws IOException {
         // Initialise output
         StringBuilder consensusSequence = new StringBuilder();
         List<VariantContext> variantCalls = new ArrayList<>();
 
-        // Iterate over bam file
+        // TODO:
+        //  - [x] Modify this for-loop to a do/while loop with condition if locusIterator.hasNext()
+        //  - [x] Initialize reference pointer outside loop
+        //  - [x] Create method to add whole read to MappingPositionTree
+        //  - [x] Create method to reconstruct position given reference pointer and MappingPositionTree
+        //       (Basically everything after "// BASE CALLING //" to "// Add final base call to sequence")
+
+        // Initialise helper variables
+        int referencePointer = 0;
+        MappingPositionTree mappingPositionTree = new MappingPositionTree();
+
+        // Iterate through each record in the BAM file
         try (SamReader reader = SamReaderFactory.makeDefault().open(reads)) {
+            try (CloseableIterator<SAMRecord> iterator = reader.iterator()) {
+                do {
+                    // Extract read
+                    SAMRecord record = iterator.next();
 
-            // Initialize SamLocusIterator
-            SamLocusIterator locusIterator = new SamLocusIterator(reader);
-            // Iterate over each position
-            for (SamLocusIterator.LocusInfo locusInfo : locusIterator) {
-                // Check if bam file end is reached
-                if (!isEndBamFile(reads, locusInfo)) {break;}
+                    // Add read information to mappingPositionTree
+                    mappingPositionTree.addReadRecord(record);
 
-                // Get reference position and initialise list for mapping reads
-                int referencePosition = locusInfo.getPosition();
-                ArrayList<MappingPosition> mappingReads = new ArrayList<>();
+                    // If read-start is larger than referencePointer, reconstruct all positions smaller than read-start
+                    while (record.getReferenceIndex() > referencePointer) {
 
-                // GET MAPPING READS //
-                for (SamLocusIterator.RecordAndOffset recordAndOffset : locusInfo.getRecordAndOffsets()) {
-                    SAMRecord record = recordAndOffset.getRecord();
-                    mappingReads.add(MappingPosition.createMappingPosition(record, referencePosition));
-                }
+                        // TODO: Write reconstruction method reconstructPosition()
+                        Tuple<Character, VariantContext> reconstructedPosition = reconstructPosition(
+                                mappingPositionTree.getMappingPositionList(referencePointer + "." + 0),
+                                minCov, minFreq, ref, sampleName, referencePointer + 1);
+                        // Add reconstructed sequence to consensus sequence by g
+                        consensusSequence.append(reconstructedPosition.getFirst());
+                        // Add reconstructed variant calls to variant calls
+                        if (vcf) {
+                            variantCalls.add(reconstructedPosition.getSecond());
+                        }
 
-                // BASE CALLING //
-                Character baseCall;
-                Map<Character, Double> cntBases = countBaseFrequencies(mappingReads);
-
-                // Check if coverage parameter is fulfilled
-                if (mappingReads.size() < minCov) {
-                    if (vcf) {
-                        // Add variant object and make non-informative base call
-                        variantCalls.add(VariantCalling.makeVariantCall(cntBases, ref, referencePosition, sampleName));
-                    }
-                    baseCall = 'N';
-                    // Create log entry if correction mode is 'no correction'
-                    if (cor_mode.equals(CorrectionMode.NO_COR)) {
-                        addLog(locusInfo, ref, mappingReads.size(), cntBases, cntBases, baseCall, -1.0);
-                    }
-                } else {
-                    // Determine if correction is necessary
-                    DamageType damPos = switch (dam_det) {
-                        case NO_COR -> DamageType.NONE;
-                        case BASED -> DamageTypeGetter.getDamageTypeRefbased(mappingReads, ref.getSequence().charAt(referencePosition - 1));
-                        case FREE -> DamageTypeGetter.getDamageTypeReffree(mappingReads);
-                    };
-
-                    // Create new instance for corrected reads
-                    ArrayList<MappingPosition> mappingReadsCor;
-                    if (!damPos.needsCorrection()) {
-                        //If no correction is necessary, copy inital read set
-                        mappingReadsCor = ListCloner.cloneList(mappingReads);
-                    } else {
-                        mappingReadsCor = switch (cor_mode) {
-                            case NO_COR -> ListCloner.cloneList(mappingReads);
-                            //If correction mode is Silencing, silence forward mapping Ts (reverse mapping As)
-                            case SILENCING -> DamageCorrection.silenceDamage(mappingReads, damPos);
-                            //If correction mode is Weighting, down-weight forward mapping Ts (reverse mapping As) / up-weight Cs (Gs)
-                            case WEIGHTING -> DamageCorrection.weightDamage(mappingReads, damPos);
-                        };
+                        // Remove reconstructed positions from mappingPositionTree
+                        mappingPositionTree.removeKey(referencePointer + "." + 0);
+                        referencePointer++;
                     }
 
-                    // Count base occurrences after correction
-                    Map<Character, Double> cntBasesCor = countBaseFrequencies(mappingReadsCor);
-
-                    // Get base and count of most occurring base
-                    Character maxBase = getMostOccurringBase(cntBasesCor);
-                    Double maxCount = cntBasesCor.get(maxBase);
-
-                    // Determine frequency of most occurring base
-                    double weightSum = sumHashmapValues(cntBasesCor);
-                    double maxFreq = maxCount / weightSum;
-
-                    if (vcf) {
-                        // Add variant object from corrected calls
-                        variantCalls.add(VariantCalling.makeVariantCall(cntBasesCor, ref, referencePosition, sampleName));
-                    }
-
-                    // Check if minimal frequency parameter is fulfilled, if not put call to 'N'
-                    if (maxFreq < minFreq || weightSum < minCov) {
-                        maxBase = 'N';
-                        maxFreq = -1.0;
-                    }
-
-                    // If position was corrected, add info to log file
-                    if (damPos.needsCorrection() || cor_mode.equals(CorrectionMode.NO_COR)) {
-                        addLog(locusInfo, ref, mappingReads.size(), cntBases, cntBasesCor, maxBase, maxFreq);
-                    }
-
-                    // Add base call
-                    baseCall = maxBase;
-                }
-
-                // Add final base call to sequence
-                consensusSequence.append(baseCall);
+                } while (iterator.hasNext()); // Stop if no more records are available
+                // TODO: Add final base call to sequence
+                //  - while referencePointer < ref.getSequence().length()
             }
         }
 
-        return new ReturnTuple(consensusSequence, variantCalls);
+        return new Tuple<>(consensusSequence, variantCalls);
+    }
+
+
+    private static Tuple<Character, VariantContext> reconstructPosition(ArrayList<MappingPosition> mappingReads, int minCov, double minFreq, Fasta ref,
+                                                                        String sampleName, int referencePosition) {
+        // BASE CALLING //
+        Character baseCall;
+        VariantContext variantCall;
+        Map<Character, Double> cntBases = countBaseFrequencies(mappingReads);
+
+        // Check if coverage parameter is fulfilled
+        if (mappingReads.size() < minCov) {
+            // Make non-informative base call
+            baseCall = 'N';
+            // Add variant object
+            variantCall = VariantCalling.makeVariantCall(cntBases, ref, referencePosition, sampleName);
+            // Create log entry if correction mode is 'no correction'
+            if (cor_mode.equals(CorrectionMode.NO_COR)) {
+                addLog(ref, referencePosition, mappingReads.size(), cntBases, cntBases, baseCall, -1.0);
+            }
+        } else {
+            // Determine if correction is necessary
+            DamageType damPos = switch (dam_det) {
+                case NO_COR -> DamageType.NONE;
+                case BASED ->
+                        DamageTypeGetter.getDamageTypeRefbased(mappingReads, ref.getSequence().charAt(referencePosition - 1));
+                case FREE -> DamageTypeGetter.getDamageTypeReffree(mappingReads);
+            };
+
+            // Create new instance for corrected reads
+            ArrayList<MappingPosition> mappingReadsCor;
+            if (!damPos.needsCorrection()) {
+                //If no correction is necessary, copy initial read set
+                mappingReadsCor = ListCloner.cloneList(mappingReads);
+            } else {
+                mappingReadsCor = switch (cor_mode) {
+                    case NO_COR -> ListCloner.cloneList(mappingReads);
+                    //If correction mode is Silencing, silence forward mapping Ts (reverse mapping As)
+                    case SILENCING -> DamageCorrection.silenceDamage(mappingReads, damPos);
+                    //If correction mode is Weighting, down-weight forward mapping Ts (reverse mapping As) / up-weight Cs (Gs)
+                    case WEIGHTING -> DamageCorrection.weightDamage(mappingReads, damPos);
+                };
+            }
+
+            // Count base occurrences after correction
+            Map<Character, Double> cntBasesCor = countBaseFrequencies(mappingReadsCor);
+
+            // Get base and count of most occurring base
+            Character maxBase = getMostOccurringBase(cntBasesCor);
+            Double maxCount = cntBasesCor.get(maxBase);
+
+            // Determine frequency of most occurring base
+            double weightSum = sumHashmapValues(cntBasesCor);
+            double maxFreq = maxCount / weightSum;
+
+            // Add variant object from corrected calls
+            variantCall = VariantCalling.makeVariantCall(cntBasesCor, ref, referencePosition, sampleName);
+
+            // Check if minimal frequency parameter is fulfilled, if not put call to 'N'
+            if (maxFreq < minFreq || weightSum < minCov) {
+                maxBase = 'N';
+                maxFreq = -1.0;
+            }
+
+            // If position was corrected, add info to log file
+            if (damPos.needsCorrection() || cor_mode.equals(CorrectionMode.NO_COR)) {
+                addLog(ref, referencePosition, mappingReads.size(), cntBases, cntBasesCor, maxBase, maxFreq);
+            }
+
+            // Add base call
+            baseCall = maxBase;
+        }
+
+        return new Tuple<>(baseCall, variantCall);
+
     }
 
 
@@ -146,7 +174,7 @@ public class BaseCalling {
      * @param mapping_reads Mapping reads
      * @return Base frequencies
      */
-    public static Map<Character, Double> countBaseFrequencies(ArrayList<MappingPosition> mapping_reads) {
+    private static Map<Character, Double> countBaseFrequencies(ArrayList<MappingPosition> mapping_reads) {
         Map<Character, Double> base_freq = new HashMap<>(Map.of('C', 0.0,
                 'T', 0.0,
                 'G', 0.0,
@@ -187,7 +215,7 @@ public class BaseCalling {
      * @param base_count_map Map of Bases and corresponding counts
      * @return Most occurring base in Map
      */
-    public static Character getMostOccurringBase(Map<Character, Double> base_count_map) {
+    private static Character getMostOccurringBase(Map<Character, Double> base_count_map) {
         // Create reverse representation of base_count-map – excl. N
         // Count as key; Base as value
         Multimap<Double, Character> rev_map = HashMultimap.create();
@@ -205,28 +233,5 @@ public class BaseCalling {
         return max_base.iterator().next();
     }
 
-
-    /**
-     * Checks for a given bam file and reference position if last BAM record is reached
-     * @param bamFile   File path to bam file
-     * @param refInfo   Current reference position
-     * @return  Boolean if last BAM record is reached
-     */
-    private static Boolean isEndBamFile(File bamFile, SamLocusIterator.LocusInfo refInfo) {
-        // Create reader for bam file
-        try (SamReader reader = SamReaderFactory.makeDefault().open(bamFile)) {
-            // Define interval that should be checked for mapping reads
-            QueryInterval queryInterval = new QueryInterval(refInfo.getSequenceIndex(),
-                    refInfo.getPosition(), refInfo.getSequenceLength());
-            QueryInterval[] queryIntervalArr = {queryInterval};
-            SAMRecordIterator iterator = reader.queryOverlapping(queryIntervalArr);
-
-            // Return whether there are mapping reads in interval
-            return iterator.hasNext();
-
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-    }
 
 }
