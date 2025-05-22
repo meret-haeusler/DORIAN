@@ -17,7 +17,7 @@ public class LogWriter {
     /**
      * Adds a line to the log file documenting the determination of a base call
      * @param ref       Reference as fasta object
-     * @param refPos    Reference position (0-based)
+     * @param refPos    Reference position (1-based)
      * @param cov       Observed read coverage at the position
      * @param cnts      Base counts before correction
      * @param cntsCor   Base counts after correction
@@ -28,19 +28,19 @@ public class LogWriter {
                               Map<Character, Double> cntsCor, Character call, Double callFreq) {
 
         // Get reference infos
-        String chrom = ref.getHeader();
-        char refBase = ref.getSequence().charAt(refPos);
+        String chrom = ref.getHeaderID();
+        char refBase = ref.getSequence().charAt(refPos - 1);
 
         // Add to log file
         // Uncorrected: CHROM POS REF COV ALLELE_COUNTS BASE_CALL BASE_FREQ
         // Corrected:   CHROM POS REF COV ALLELE_COUNTS_PRIOR ALLELE_COUNTS_CORRECTED BASE_CALL BASE_FREQ
         if (cor_mode.equals(CorrectionMode.NO_COR)) {
             file_logger.info("{}\t{}\t{}\t{}\t{}\t{}\t{}",
-                    chrom, refPos+1, refBase, cov, MapToString(cnts), call, callFreq);
+                    chrom, refPos, refBase, cov, MapToString(cnts), call, callFreq);
         } else {
             // Log file
             file_logger.info("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}",
-                    chrom, refPos+1, refBase, cov, MapToString(cnts), MapToString(cntsCor), call, callFreq);
+                    chrom, refPos, refBase, cov, MapToString(cnts), MapToString(cntsCor), call, callFreq);
 
             // ROI file
             if (roi_tab != null) {
