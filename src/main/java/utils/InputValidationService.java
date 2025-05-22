@@ -18,6 +18,21 @@ public class InputValidationService {
             checkFile(cmd, "dp3");
             checkFile(cmd, "dp5");
         }
+
+        // Check if frequency is between 0 and 1
+        String freqStr = cmd.getOptionValue("freq");
+        if (freqStr != null) {
+            try {
+                double freq = Double.parseDouble(freqStr);
+                if (freq < 0 || freq > 1) {
+                    logger.error("Frequency must be between 0 and 1.");
+                    System.exit(1);
+                }
+            } catch (NumberFormatException e) {
+                logger.error("Invalid frequency value: {}", freqStr);
+                System.exit(1);
+            }
+        }
     }
 
     private static void checkFile(CommandLine cmd, String option) {
