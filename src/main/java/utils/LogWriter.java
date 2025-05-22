@@ -2,7 +2,6 @@ package utils;
 
 import datastructure.CorrectionMode;
 import datastructure.Fasta;
-import htsjdk.samtools.util.SamLocusIterator;
 
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
