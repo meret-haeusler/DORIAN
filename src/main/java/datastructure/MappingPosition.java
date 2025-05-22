@@ -46,18 +46,6 @@ public class MappingPosition {
         this.base = base;
     }
 
-    public void setReadIdx(int read_idx) {
-        this.read_idx = read_idx;
-    }
-
-    public void setReadLength(int read_length) {
-        this.read_length = read_length;
-    }
-
-    public void setIsReverse(boolean is_reverse) {
-        this.is_reverse = is_reverse;
-    }
-
     public void setWeight(double weight) {
         this.weight = weight;
     }
@@ -69,22 +57,6 @@ public class MappingPosition {
     // Getters
     public Character getBase() {
         return this.base;
-    }
-
-    public int getReadIdx() {
-        return this.read_idx;
-    }
-
-    public int getReadLength() {
-        return this.read_length;
-    }
-
-    public boolean getIsReverse() {
-        return this.is_reverse;
-    }
-
-    public double getWeight() {
-        return this.weight;
     }
 
 
