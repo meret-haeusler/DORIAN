@@ -26,14 +26,17 @@ public class MappingPositionTree {
      * @param read A SAMRecord object representing the read.
      */
     public void addReadRecord(SAMRecord read) {
-        // Iterate over read positions
-        for (int i = 0; i < read.getReadLength(); i++) {
+        int alignedReadLength = read.getAlignmentEnd() - read.getAlignmentStart() + 1;
+        // Iterate over read positions that map to the reference
+        for (int i = 0; i < alignedReadLength; i++) {
             // Get the reference position and create key
             int refPos = read.getAlignmentStart() + i;
             String key = refPos + "." + 0;
             // Create a MappingPosition object and add it to the tree
             MappingPosition position = MappingPosition.createMappingPosition(read, refPos);
-            container.computeIfAbsent(key, k -> new ArrayList<>()).add(position);
+            if (position != null) {
+                container.computeIfAbsent(key, k -> new ArrayList<>()).add(position);
+            }
         }
     }
 
@@ -43,14 +46,22 @@ public class MappingPositionTree {
      * @return List of MappingPosition objects.
      */
     public ArrayList<MappingPosition> getMappingPositionList(String key) {
-        return container.get(key);
+        return container.getOrDefault(key, new ArrayList<>());
     }
 
 
-    /* Removes a reference position from the tree.
+    /** Removes a reference position from the tree.
      * @param key String representing the reference position.
      */
     public void removeKey(String key) {
         container.remove(key);
+    }
+
+
+    /** Checks if the tree is empty.
+     * @return True if the tree is empty, false otherwise.
+     */
+    public boolean isEmpty() {
+        return container.isEmpty();
     }
 }

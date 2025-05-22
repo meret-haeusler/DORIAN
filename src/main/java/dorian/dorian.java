@@ -104,7 +104,7 @@ public class dorian {
                 roi_tab.info("#CHROM\tROI_START\tROI_END\tCORRECTED_POS");
             }
 
-            logger.info("Analysis started successfully with valid input arguments.");
+            logger.info("Analysis started successfully with valid input arguments.\n");
 
             // ADD STATUS BAR //
             // Start the updating message in a separate thread
@@ -121,41 +121,43 @@ public class dorian {
             // OUTPUT //
             updatingMessage.interrupt();
             logger.info("\rDORIAN completed successfully.\n");
-            logger.info("Result files:");
+            logger.info("Result files written to:");
 
-            // Define Fasta output
+            // Put method name together
             String method = cor_mode.equals(CorrectionMode.NO_COR)
                 ? cor_mode.getModeName()
                 : dam_det.getDetectionMode() + "-" + cor_mode.getModeName();
-            Fasta consensus_record = new Fasta(">" + sample_name + "_" + method, consensus_sequence.toString());
-            String fasta_path = out_path + "/" + sample_name + "_" + method + ".fasta";
-            FastaIO.writeFasta(consensus_record, fasta_path);
-            logger.info("Reconstructed genome written to: {}", fasta_path);
 
             // Move log file to output directory
             Files.move(Path.of("file.log"),
                     Path.of(out_path + "/" + time_stamp + "_" + sample_name + "_" + method + ".log"));
-            logger.info("Log file written to: {}/{}_{}_{}.log", out_path, time_stamp, sample_name, method);
+            logger.info("– Log file:\t\t{}/{}_{}_{}.log", out_path, time_stamp, sample_name, method);
+
+            // Define Fasta output
+            Fasta consensus_record = new Fasta(">" + sample_name + "_" + method, consensus_sequence.toString());
+            String fasta_path = out_path + "/" + sample_name + "_" + method + ".fasta";
+            FastaIO.writeFasta(consensus_record, fasta_path);
+            logger.info("– Fasta file:\t{}", fasta_path);
 
             // Define vcf output
             if (cmd.hasOption("vcf")) {
                 String vcf_out = out_path + "/" + sample_name + "_" + method + ".vcf";
                 VCFHeader vcf_header = VCFFileWriter.defaultHeader(ref, sample_name + "_" + method, method);
                 VCFFileWriter.writeVCFFile(vcf_out, vcf_header, variant_calls);
-                logger.info("Corrected variants written to: {}", vcf_out);
+                logger.info("– VCF file:\t\t{}", vcf_out);
             }
 
             // Define bed output
             if (cmd.hasOption("bed")) {
                 Files.move(Path.of("roi.bed"),
-                        Path.of(out_path + "/" + time_stamp + "_" + sample_name + "_" + method + ".bed"));
-                logger.info("ROI table (IGV format) for corrected variants written to: {}/{}_{}_{}.bed", out_path, time_stamp, sample_name, cor_mode.getShortName());
+                        Path.of(out_path + "/" + sample_name + "_" + method + ".bed"),
+                        java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+                logger.info("– ROI table:\t\t{}/{}_{}.bed", out_path, sample_name, method);
             }
 
 
-
         } catch (Exception e) {
-            logger.error("Runtime error: {}", e.getMessage());
+            logger.error("Runtime error:", e);
             System.exit(1);
         }
     }

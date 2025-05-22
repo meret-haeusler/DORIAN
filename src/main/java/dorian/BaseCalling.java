@@ -3,8 +3,10 @@ package dorian;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
 import datastructure.*;
-import htsjdk.samtools.*;
-import htsjdk.samtools.util.CloseableIterator;
+import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.SAMRecordIterator;
+import htsjdk.samtools.SamReader;
+import htsjdk.samtools.SamReaderFactory;
 import htsjdk.variant.variantcontext.VariantContext;
 import utils.DamageTypeGetter;
 import utils.ListCloner;
@@ -22,7 +24,7 @@ import static utils.LogWriter.addLog;
  *
  * @author Meret Häusler
  * @version 1.0
- * @since 2024-02-15
+ * @since 2025-05-22
  */
 public class BaseCalling {
 
@@ -43,56 +45,72 @@ public class BaseCalling {
         StringBuilder consensusSequence = new StringBuilder();
         List<VariantContext> variantCalls = new ArrayList<>();
 
-        // TODO:
-        //  - [x] Modify this for-loop to a do/while loop with condition if locusIterator.hasNext()
-        //  - [x] Initialize reference pointer outside loop
-        //  - [x] Create method to add whole read to MappingPositionTree
-        //  - [x] Create method to reconstruct position given reference pointer and MappingPositionTree
-        //       (Basically everything after "// BASE CALLING //" to "// Add final base call to sequence")
-
         // Initialise helper variables
-        int referencePointer = 0;
+        int referencePointer = 1;
         MappingPositionTree mappingPositionTree = new MappingPositionTree();
 
         // Iterate through each record in the BAM file
         try (SamReader reader = SamReaderFactory.makeDefault().open(reads)) {
-            try (CloseableIterator<SAMRecord> iterator = reader.iterator()) {
-                do {
+            try (SAMRecordIterator iterator = reader.iterator()) {
+
+                while (iterator.hasNext()) {     // Stop if no more records are available
                     // Extract read
                     SAMRecord record = iterator.next();
-
                     // Add read information to mappingPositionTree
                     mappingPositionTree.addReadRecord(record);
 
                     // If read-start is larger than referencePointer, reconstruct all positions smaller than read-start
-                    while (record.getReferenceIndex() > referencePointer) {
-
-                        // TODO: Write reconstruction method reconstructPosition()
+                    while (record.getAlignmentStart() > referencePointer) {
+                        // Reconstruct base call and variant call for referencePointer
                         Tuple<Character, VariantContext> reconstructedPosition = reconstructPosition(
                                 mappingPositionTree.getMappingPositionList(referencePointer + "." + 0),
-                                minCov, minFreq, ref, sampleName, referencePointer + 1);
+                                minCov, minFreq, ref, sampleName, referencePointer);
                         // Add reconstructed sequence to consensus sequence by g
                         consensusSequence.append(reconstructedPosition.getFirst());
                         // Add reconstructed variant calls to variant calls
                         if (vcf) {
                             variantCalls.add(reconstructedPosition.getSecond());
                         }
-
                         // Remove reconstructed positions from mappingPositionTree
                         mappingPositionTree.removeKey(referencePointer + "." + 0);
                         referencePointer++;
                     }
-
-                } while (iterator.hasNext()); // Stop if no more records are available
-                // TODO: Add final base call to sequence
-                //  - while referencePointer < ref.getSequence().length()
+                }
+                // Traverse until the end of the reference sequence
+                // TODO NOTE: If we only want to return positions at the end with at least 1X coverage,
+                //  then simply replace the while condition with !mappingPositionTree.isEmpty()
+                while (referencePointer <= ref.getSequence().length()) {
+                    // Reconstruct base call and variant call for referencePointer
+                    Tuple<Character, VariantContext> reconstructedPosition = reconstructPosition(
+                            mappingPositionTree.getMappingPositionList(referencePointer + "." + 0),
+                            minCov, minFreq, ref, sampleName, referencePointer);
+                    // Add reconstructed sequence to consensus sequence by g
+                    consensusSequence.append(reconstructedPosition.getFirst());
+                    // Add reconstructed variant calls to variant calls
+                    if (vcf) {
+                        variantCalls.add(reconstructedPosition.getSecond());
+                    }
+                    // Remove reconstructed positions from mappingPositionTree
+                    mappingPositionTree.removeKey(referencePointer + "." + 0);
+                    referencePointer++;
+                }
             }
         }
-
         return new Tuple<>(consensusSequence, variantCalls);
     }
 
 
+    /**
+     * Reconstructs the base call and variant call for a given reference position.
+     *
+     * @param mappingReads      List of mapping reads at the reference position
+     * @param minCov            Minimum coverage for base calling
+     * @param minFreq           Minimum frequency for base calling
+     * @param ref               Reference sequence
+     * @param sampleName        Name of the sample
+     * @param referencePosition Reference position (1-based)
+     * @return Tuple containing the base call and variant call
+     */
     private static Tuple<Character, VariantContext> reconstructPosition(ArrayList<MappingPosition> mappingReads, int minCov, double minFreq, Fasta ref,
                                                                         String sampleName, int referencePosition) {
         // BASE CALLING //
