@@ -22,8 +22,8 @@ public class CLIParser {
     private final static String[] REFERENCE = new String[]{"r", "reference", "FASTA reference file"};
     private final static String[] DETECTION_MODE = new String[]{null, "detection", "Damage detection mode (only required if correction is s or w):\npb (Polarization-Based) or pf (Polarization-Free)"};
     private final static String[] CORRECTION_MODE = new String[]{null, "correction", "Damage correction mode: s (Silencing), w (Weighting), or nc (no correction)"};
-    private final static String[] VCF_OUTPUT = new String[]{null, "vcf", "Generate VCF output"};
-    private final static String[] BED_OUTPUT = new String[]{null, "bed", "Generate BED output"};
+    private final static String[] VCF_OUTPUT = new String[]{null, "vcf", "Generate VCF file for all positions with corrected bases"};
+    private final static String[] BED_OUTPUT = new String[]{null, "bed", "Generate ROI table in IGV format for corrected positions"};
     private final static String[] COV = new String[]{"c", "cov", "Coverage (integer)"};
     private final static String[] FREQ = new String[]{"f", "freq", "Frequency (between 0 and 1)"};
     private final static String[] DP5_INPUT = new String[]{null, "dp5", "DP5 input file (required if correction = w)"};
