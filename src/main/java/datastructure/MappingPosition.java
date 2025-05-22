@@ -25,11 +25,12 @@ public class MappingPosition {
 
     /**
      * Creates a MappingPosition object
-     * @param base          Character at read_idx in read
-     * @param read_idx      Index of base in read (0-based)
-     * @param read_length   Length of read
-     * @param is_reverse    False if read is forward mapping; True if read is reverse mapping
-     * @param weight        Weight of base contributing to base call
+     *
+     * @param base        Character at read_idx in read
+     * @param read_idx    Index of base in read (0-based)
+     * @param read_length Length of read
+     * @param is_reverse  False if read is forward mapping; True if read is reverse mapping
+     * @param weight      Weight of base contributing to base call
      */
     public MappingPosition(Character base, int read_idx, int read_length, boolean is_reverse, double weight) {
         this.base = base;
@@ -90,18 +91,21 @@ public class MappingPosition {
     /**
      * Extracts information of SAMrecord and creates MappingPosition
      *
-     * @param record    Set of reads
-     * @param ref_pos   1-based reference position
-     * @return  MappingPosition object
+     * @param record  A read record
+     * @param ref_pos Reference position (1-based)
+     * @return MappingPosition object: base, read_idx (0-based), read_length, is_reverse, weight
      */
     public static MappingPosition createMappingPosition(SAMRecord record, int ref_pos) {
         int read_idx = record.getReadPositionAtReferencePosition(ref_pos) - 1;
-
-        return new MappingPosition(record.getReadString().charAt(read_idx),
-                read_idx,
-                record.getReadLength(),
-                record.getReadNegativeStrandFlag(), 1.0);
+        // Check if position is a deletion
+        if (read_idx == -1) {
+            return null;
+        } else {
+            return new MappingPosition(record.getReadString().charAt(read_idx),
+                    read_idx,
+                    record.getReadLength(),
+                    record.getReadNegativeStrandFlag(),
+                    1.0);
+        }
     }
-
-
 }
