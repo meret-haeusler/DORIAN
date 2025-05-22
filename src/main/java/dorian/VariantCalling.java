@@ -45,7 +45,7 @@ public class VariantCalling {
         genotype.noPL();
 
         // Create contig name for reference
-        String contig = ref.getHeader().split(" ")[0].replace(">", "");
+        String contig = ref.getHeaderID();
 
         // Create VariantContext from genotype
         VariantContextBuilder variant = new VariantContextBuilder();
