@@ -1,6 +1,15 @@
 ## DORIAN
+<table>
+    <tr>
+        <td>
 DORIAN (**D**amage-aware gen**O**me **R**econstruct**I**on for **AN**cient data) is a genome reconstruction tool designed for ancient data. DORIAN implements damage-aware genome reconstruction with different methods to detect and correct damaged positions prior to consensus base calling.  
 DORIAN allows two modes to detect and correct damaged positions, respectively.  
+        </td>
+        <td>
+            <img src="media/DORIAN.jpg>" alt="DORIAN Logo" width="150"/>
+        </td>
+    </tr>
+</table>
 
 **Damage detection**
 * Polarization-Based identifies damaged positions using the reference base.
