@@ -71,7 +71,7 @@ Reconstructed sequence of the input sample. As header, the sample name as specif
 <details>
 <summary>BED</summary>
 
-> Only for Reference-based Silencing, Reference-free Silencing and Reference-free Weighting runs.
+> Only for runs where ```--correction```is either ```w```  or ```s```.
 
 File that can be loaded to IGV ([Interactive Genome Viewer](https://igv.org)) together with the BAM and reference file to closer inspect the corrected positions. This highlights the positions on which a correction was performed as well as the two previous and following positions.
 
@@ -82,5 +82,5 @@ File that can be loaded to IGV ([Interactive Genome Viewer](https://igv.org)) to
 <summary>VCF</summary>
 File similar to VCF files generated in GATK's UnifiedGenotyper or HalotypeCaller. 
 
-In Reference-free Weighting, weights that are not a whole number are rounded to the next integer in the AD tag of the VCF file.
+If ```--correction``` is ```w```, weights which are not a whole number are rounded to the next integer in the AD tag of the VCF file.
 </details>
