@@ -6,7 +6,7 @@ DORIAN (<b>D</b>amage-aware gen<b>O</b>me <b>R</b>econstruct<b>I</b>on for <b>AN
 DORIAN allows two modes to detect and correct damaged positions, respectively.  
         </td>
         <td>
-            <img src="media/DORIAN.jpg" alt="DORIAN Logo" width="1500"/>
+            <img src="media/DORIAN.jpg" alt="DORIAN Logo" width="750"/>
         </td>
     </tr>
 </table>
