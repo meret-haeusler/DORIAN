@@ -1,11 +1,17 @@
 ## DORIAN
-DORIAN (**D**amage-aware gen**O**me **R**econstruct**I**on for **AN**cient data) is a genome reconstruction tool designed for ancient data. DORIAN implements  three damage-aware reconstruction methods where positions that show ancient specific damage patterns are corrected prior to base calling. 
+DORIAN (**D**amage-aware gen**O**me **R**econstruct**I**on for **AN**cient data) is a genome reconstruction tool designed for ancient data. DORIAN implements damage-aware genome reconstruction with different methods to detect and correct damaged positions prior to consensus base calling.  
+DORIAN allows two modes to detect and correct damaged positions, respectively.  
 
-* Reference-based Silencing identifies damaged positions using the reference sequence and replaces damaged bases with a non-informative base call.
-* Reference-free Silencing identifies damages positions by specific damage patterns in the mapping reads and replaces the damaged bases with a non-informative base call.
-* Reference-free Weighting uses also uses the ancient specific damage pattern to identify damaged positions and performs a weighting on the affected bases to increase or decrease their influence on the base call bases on the severity of the damage observed.
+**Damage detection**
+* Polarization-Based identifies damaged positions using the reference base.
+* Polarization-Free identifies damaged positions using ancient specific damage patterns in the mapping reads.
 
-In addition, a state-of-the-art genome reconstruction is implemented that bases the base calls merely on coverage and base frequencies. 
+**Damage correction**
+* Silencing replaces damaged positions with a non-informative ('N') base call.
+* Weighting performs a weighting on the affected bases to increase or decrease their influence on the base call bases on the severity of the damage observed.
+* No correction: Consensus base calls are merely made based on coverage and base frequency
+    > ```damage detection``` is not required
+
 
 ## Dependencies
 The current version of DORIAN is build with ```JDK 15``` and ```Maven 3.12.1```. A precompiled excutable jar file is in the ```DORIAN/out/artifacts/DORIAN_jar``` folder of the repository.
@@ -24,8 +30,8 @@ java -jar <path/to/file>DORIAN.jar [options]
  -f,--freq <DOUBLE>             Minimum frequency for consensus calling
 
 --correction <STRING>           Damage correction mode: 
-                                    s (Silencing)
-                                    w (Weighting)
+                                    s  (Silencing)
+                                    w  (Weighting)
                                     nc (no correction)
 --detection <STRING>            Damage detection mode (only for correction modes s and w):
                                     pb (Polarization-Based)
@@ -36,7 +42,7 @@ java -jar <path/to/file>DORIAN.jar [options]
  --dp5 <FILE>                   Path to DamageProfile of 5' end
  
  Optional:
- --bed                          Writes a BED file to --out
+ --bed                          Writes a BED file to --out (ROI table in IGV format for corrected positions)
  --vcf                          Writes a VCF file to --out
 `````
 
