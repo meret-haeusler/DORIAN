@@ -1,9 +1,9 @@
 ## DORIAN
 DORIAN (**D**amage-aware gen**O**me **R**econstruct**I**on for **AN**cient data) is a genome reconstruction tool designed for ancient data. DORIAN implements  three damage-aware reconstruction methods where positions that show ancient specific damage patterns are corrected prior to base calling. 
 
-* Reference-based Silencing identifies damaged positions using the reference sequence and replaces damaged bases with a non-informative base call.
-* Reference-free Silencing identifies damages positions by specific damage patterns in the mapping reads and replaces the damaged bases with a non-informative base call.
-* Reference-free Weighting uses also uses the ancient specific damage pattern to identify damaged positions and performs a weighting on the affected bases to increase or decrease their influence on the base call bases on the severity of the damage observed.
+* Polarization-Based Damage Silencing identifies damaged positions using the reference sequence and replaces damaged bases with a non-informative base call.
+* Polarization-Free Damage Silencing identifies damages positions by specific damage patterns in the mapping reads and replaces the damaged bases with a non-informative base call.
+* Polarization-Free Damage Weighting uses also uses the ancient specific damage pattern to identify damaged positions and performs a weighting on the affected bases to increase or decrease their influence on the base call bases on the severity of the damage observed.
 
 In addition, a state-of-the-art genome reconstruction is implemented that bases the base calls merely on coverage and base frequencies. 
 
@@ -25,11 +25,11 @@ java -jar <path/to/file>DORIAN.jar [options]
 
  -m,--mode <INT>                Correction modes:
                                 1=no correction
-                                2=ref-based silencing
-                                3=ref-free silencing
-                                4=ref-free weighting
+                                2=polarization-based damage silencing
+                                3=polarization-free damage silencing
+                                4=polarization-free damage weighting
 
- Only for ref-free weighting:                               
+ Only for polarization-free damage weighting:                               
  -dp3,--damageprofile3 <FILE>   Path to DamageProfile of 3' end
  -dp5,--damageprofile5 <FILE>   Path to DamageProfile of 5' end
 `````
@@ -59,7 +59,7 @@ Reconstructed sequence of the input sample. As header, the sample name as specif
 <details>
 <summary>BED</summary>
 
-> Only for Reference-based Silencing, Reference-free Silencing and Reference-free Weighting runs.
+> Only for runs with correction enabled.
 
 File that can be loaded to IGV ([Interactive Genome Viewer](https://igv.org)) together with the BAM and reference file to closer inspect the corrected positions. This highlights the positions on which a correction was performed as well as the two previous and following positions.
 
@@ -70,5 +70,5 @@ File that can be loaded to IGV ([Interactive Genome Viewer](https://igv.org)) to
 <summary>VCF</summary>
 File similar to VCF files generated in GATK's UnifiedGenotyper or HalotypeCaller. 
 
-In Reference-free Weighting, weights that are not a whole number are rounded to the next integer in the AD tag of the VCF file.
+In Polarization-Free Damage Weighting, weights that are not a whole number are rounded to the next integer in the AD tag of the VCF file.
 </details>
