@@ -7,12 +7,16 @@ DORIAN (**D**amage-aware gen**O**me **R**econstruct**I**on for **AN**cient data)
 
 In addition, a state-of-the-art genome reconstruction is implemented that bases the base calls merely on coverage and base frequencies. 
 
-## Dependencies
+## System Requirements  
+DORIAN was test on the following systems:
+* macOS: Sequoia (15.5)
+* Linux: Ubuntu (22.04.5)
+
+## Setup and Usage
 The current version of DORIAN is build with ```JDK 15``` and ```Maven 3.12.1```. A precompiled excutable jar file is in the ```DORIAN/out/artifacts/DORIAN_jar``` folder of the repository.
 
-## Usage
 `````
-java -jar <path/to/file>DORIAN.jar [options]
+java -jar <path/to/file>/DORIAN.jar [options]
 
  -h,--help                      Print help message
 
@@ -72,3 +76,6 @@ File similar to VCF files generated in GATK's UnifiedGenotyper or HalotypeCaller
 
 In Polarization-Free Damage Weighting, weights that are not a whole number are rounded to the next integer in the AD tag of the VCF file.
 </details>
+
+## Test data
+A guide to generate ancient DNA samples and scripts for running DORIAN and evaluation can be found [here](https://github.com/meret-haeusler/Supplementary_DORIAN_evaluation).
