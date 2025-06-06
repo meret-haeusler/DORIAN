@@ -12,7 +12,7 @@ In addition, a state-of-the-art genome reconstruction is implemented that bases 
 * Apache Maven 3.9.10
 
 ### OS Requirements
-DORIAN was test on the following systems:
+DORIAN was tested on the following systems:
 * macOS: Sequoia (15.5)
 * Linux: Ubuntu (22.04.5)
 
