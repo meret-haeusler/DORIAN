@@ -7,14 +7,25 @@ DORIAN (**D**amage-aware gen**O**me **R**econstruct**I**on for **AN**cient data)
 
 In addition, a state-of-the-art genome reconstruction is implemented that bases the base calls merely on coverage and base frequencies. 
 
-## System Requirements  
+## Software Requirements
+* Java 22.0.1
+* Apache Maven 3.9.10
+
+### OS Requirements
 DORIAN was test on the following systems:
 * macOS: Sequoia (15.5)
 * Linux: Ubuntu (22.04.5)
 
-## Setup and Usage
-The current version of DORIAN is build with ```JDK 15``` and ```Maven 3.12.1```. A precompiled excutable jar file is in the ```DORIAN/out/artifacts/DORIAN_jar``` folder of the repository.
+## Installation
+```
+git clone git@github.com:meret-haeusler/DORIAN.git
+cd DORIAN
+mvn clean compile assembly:single
+```
+A precompiled excutable jar file can be found in the ```DORIAN/out/artifacts/DORIAN_jar``` folder of the repository.
 
+
+## Usage
 `````
 java -jar <path/to/file>/DORIAN.jar [options]
 
