@@ -22,7 +22,7 @@ git clone git@github.com:meret-haeusler/DORIAN.git
 cd DORIAN
 mvn clean compile assembly:single
 ```
-A precompiled excutable jar file can be found in the ```DORIAN/out/artifacts/DORIAN_jar``` folder of the repository.
+The compiled jar file can be found in ```DORIAN/target```. A precompiled excutable jar file is also available in the ```DORIAN/out/artifacts/DORIAN_jar``` folder of the repository.
 
 
 ## Usage
