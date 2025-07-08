@@ -61,8 +61,12 @@ public class DamageCorrection {
 
         // Iterate over mapping positions
         for (MappingPosition mp : weightedReads) {
+            // TODO: Get read group from MappingPosition and use according damage profiles
+            // TODO: Extract damage profiles for read group
+            ArrayList<Double> dp5 = null;
+            ArrayList<Double> dp3 = null;
             if (damType.equals(DamageType.CT) && mp.base == 'T' && !mp.is_reverse) {
-                List<Double> dp = mapDamageToRead(mp.read_length, dorian.dp5, dorian.dp3);
+                List<Double> dp = mapDamageToRead(mp.read_length, dp5, dp3);
                 double dam = dp.get(mp.read_idx);
                 double cor_weight = 1 - dam;
                 mp.setWeight(cor_weight);
@@ -70,9 +74,9 @@ public class DamageCorrection {
 
             } else if (damType.equals(DamageType.GA) && mp.base == 'A' && mp.is_reverse) {
                 // Reverse damage profiles to match reverse reads
-                List<Double> rev_dp5 = new ArrayList<>(List.copyOf(dorian.dp5));
+                List<Double> rev_dp5 = new ArrayList<>(List.copyOf(dp5));
                 Collections.reverse(rev_dp5);
-                List<Double> rev_dp3 = new ArrayList<>(List.copyOf(dorian.dp3));
+                List<Double> rev_dp3 = new ArrayList<>(List.copyOf(dp3));
                 Collections.reverse(rev_dp3);
 
                 List<Double> dp = mapDamageToRead(mp.read_length, rev_dp3, rev_dp5);

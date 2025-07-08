@@ -14,12 +14,14 @@ import utils.InputValidationService;
 import utils.VCFFileWriter;
 
 import java.io.File;
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 
 import static dorian.BaseCalling.consensusCalling;
 
@@ -34,12 +36,11 @@ public class dorian {
     public static Logger roi_tab;
     public static DetectionMode dam_det;
     public static CorrectionMode cor_mode;
-    public static List<Double> dp5;
-    public static List<Double> dp3;
+    public static Map<String, Map<String, List<Double>>> dp;
     public static double freq;
     public static int cov;
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws IOException {
 
         // LOGGING //
         Date log_date = new Date();
@@ -65,8 +66,11 @@ public class dorian {
             }
             // Damage profiles
             if (cor_mode.equals(CorrectionMode.WEIGHTING)) {
-                dp5 = DamageProfileParser.parseDamageProfile(cmd.getOptionValue("dp5"));
-                dp3 = DamageProfileParser.parseDamageProfile(cmd.getOptionValue("dp3"));
+                if (cmd.hasOption("dp5") || cmd.hasOption("dp3")) {
+                    dp = DamageProfileParser.damageProfile(cmd.getOptionValue("dp5"), cmd.getOptionValue("dp3"));
+                } else if (cmd.hasOption("dp_file")) {
+                    dp = DamageProfileParser.damageProfile(cmd.getOptionValue("dp_file"));
+                }
             }
             // Output directory
             Path out_path = Paths.get(cmd.getOptionValue("out"));

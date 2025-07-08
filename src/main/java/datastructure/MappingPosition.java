@@ -23,6 +23,7 @@ public class MappingPosition {
         this.weight = weight;
     }
 
+    // TODO: Add read_group to MappingPosition
     /**
      * Creates a MappingPosition object
      *

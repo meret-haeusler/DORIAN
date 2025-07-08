@@ -9,9 +9,79 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class DamageProfileParser {
+
+    /**
+     * Parses damage profiles if only 5' and 3' damage profiles are given.
+     * @param dp5_file Path to 5' damage profile file
+     * @param dp3_file Path to 3' damage profile file
+     * @return Map with default read group as key and a map of damage profiles
+     * @throws IOException
+     */
+    public static Map<String, Map<String, List<Double>>> damageProfile(String dp5_file, String dp3_file) throws IOException {
+
+        // Parse 5' and 3' damage profile
+        List<Double> dp5 = parseDamageProfile(dp5_file);
+        List<Double> dp3 = parseDamageProfile(dp3_file);
+
+        // Create a map to hold the parsed damage profiles
+        Map<String, List<Double>> dpMap = new HashMap<>();
+        dpMap.put("dp5", dp5);
+        dpMap.put("dp3", dp3);
+
+        // Add to parsedDP map with read group as key
+        Map<String, Map<String, List<Double>>> parsedDP = new HashMap<>();
+        parsedDP.put("default", dpMap);
+
+        return parsedDP;
+    }
+
+    public static Map<String, Map<String, List<Double>>> damageProfile(String dp_file) throws IOException {
+        // Initialise output map
+        Map<String, Map<String, List<Double>>> parsedDP = new HashMap<>();
+
+        // TODO:
+        //  - Implement TSV parser
+        //  - for each line, parse read group and damage profiles, and add to parsedDP map
+
+        // Configure the TsvParser settings
+        TsvParserSettings settings = new TsvParserSettings();
+        settings.getFormat().setLineSeparator("\n");
+        settings.setHeaderExtractionEnabled(false);
+        // Create a TsvParser instance with the configured settings
+        TsvParser parser = new TsvParser(settings);
+        // Parse the TSV file and get the list of records
+        Path dp_path = Paths.get(dp_file);
+        List<String[]> dp_list = parser.parseAll(Files.newBufferedReader(dp_path, StandardCharsets.UTF_8));
+
+        // Iterate through each record in the parsed list (read_group, path to dp5, path to dp3)
+        for (String[] record : dp_list) {
+            if (record.length < 3) {
+                throw new IOException("Invalid damage profile record: " + String.join("\t", record));
+            }
+            String read_group = record[0];
+            String dp5_path = record[1];
+            String dp3_path = record[2];
+
+            // Parse the damage profiles for the read group
+            List<Double> dp5 = parseDamageProfile(dp5_path);
+            List<Double> dp3 = parseDamageProfile(dp3_path);
+
+            // Create a map to hold the parsed damage profiles for this read group
+            Map<String, List<Double>> dpMap = new HashMap<>();
+            dpMap.put("dp5", dp5);
+            dpMap.put("dp3", dp3);
+
+            // Add to parsedDP map with read group as key
+            parsedDP.put(read_group, dpMap);
+        }
+
+        return parsedDP;
+    }
 
     /**
      * Parses the tsv damage profile from the given file
@@ -19,7 +89,7 @@ public class DamageProfileParser {
      * @param FilePath Path to damage profile
      * @return Damage profile as list of doubles
      */
-    public static List<Double> parseDamageProfile(String FilePath) throws IOException {
+    private static List<Double> parseDamageProfile(String FilePath) throws IOException {
         // Initialise output
         List<Double> parsedProfile = new ArrayList<>();
 
