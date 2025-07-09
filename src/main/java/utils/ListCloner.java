@@ -10,7 +10,7 @@ public class ListCloner {
         ArrayList<MappingPosition> clonedList = new ArrayList<>();
 
         for (MappingPosition mp : list) {
-            MappingPosition newMP = new MappingPosition(mp.base, mp.read_idx, mp.read_length, mp.is_reverse, mp.weight);
+            MappingPosition newMP = new MappingPosition(mp.base, mp.read_idx, mp.read_length, mp.is_reverse, mp.weight, mp.read_group);
             clonedList.add(newMP);
         }
 

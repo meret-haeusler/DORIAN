@@ -15,8 +15,17 @@ public class InputValidationService {
 
         String correction = cmd.getOptionValue("correction");
         if (correction.equals("w")) {
-            checkFile(cmd, "dp3");
-            checkFile(cmd, "dp5");
+            if (cmd.hasOption("dp3") && cmd.hasOption("dp5")) {
+                // If both dp3 and dp5 are specified, check if they exist
+                checkFile(cmd, "dp3");
+                checkFile(cmd, "dp5");
+            } else if (cmd.hasOption("dp_file")) {
+                // If dp_file is specified, check if it exists
+                checkFile(cmd, "dp_file");
+            } else {
+                logger.error("Damage profile files are required when correction mode is 'w'.");
+                System.exit(1);
+            }
         }
 
         // Check if frequency is between 0 and 1

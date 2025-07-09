@@ -16,6 +16,7 @@ public class MappingPosition {
     public int read_length;
     public boolean is_reverse;
     public double weight;
+    public String read_group;
 
     // Constructor
     public MappingPosition(Character base, double weight) {
@@ -23,7 +24,6 @@ public class MappingPosition {
         this.weight = weight;
     }
 
-    // TODO: Add read_group to MappingPosition
     /**
      * Creates a MappingPosition object
      *
@@ -33,12 +33,13 @@ public class MappingPosition {
      * @param is_reverse  False if read is forward mapping; True if read is reverse mapping
      * @param weight      Weight of base contributing to base call
      */
-    public MappingPosition(Character base, int read_idx, int read_length, boolean is_reverse, double weight) {
+    public MappingPosition(Character base, int read_idx, int read_length, boolean is_reverse, double weight, String read_group) {
         this.base = base;
         this.read_idx = read_idx;
         this.read_length = read_length;
         this.is_reverse = is_reverse;
         this.weight = weight;
+        this.read_group = read_group;
     }
 
 
@@ -78,7 +79,8 @@ public class MappingPosition {
                     read_idx,
                     record.getReadLength(),
                     record.getReadNegativeStrandFlag(),
-                    1.0);
+                    1.0,
+                    record.getReadGroup().getReadGroupId());
         }
     }
 }

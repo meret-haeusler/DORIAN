@@ -14,11 +14,11 @@ import utils.InputValidationService;
 import utils.VCFFileWriter;
 
 import java.io.File;
-import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -36,11 +36,11 @@ public class dorian {
     public static Logger roi_tab;
     public static DetectionMode dam_det;
     public static CorrectionMode cor_mode;
-    public static Map<String, Map<String, List<Double>>> dp;
+    public static Map<String, Map<String, ArrayList<Double>>> dp;
     public static double freq;
     public static int cov;
 
-    public static void main(String[] args) throws IOException {
+    public static void main(String[] args) {
 
         // LOGGING //
         Date log_date = new Date();
@@ -161,7 +161,7 @@ public class dorian {
 
 
         } catch (Exception e) {
-            logger.error("Runtime error:", e);
+            logger.error(e);
             System.exit(1);
         }
     }
@@ -192,6 +192,7 @@ public class dorian {
         return updatingMessage;
     }
 
+
     private static void writeCLItoLog(Logger log, CommandLine cmd) {
         log.info("Parsed arguments:");
         log.info("BAM file:              \t{}", cmd.getOptionValue("bam"));
@@ -204,8 +205,12 @@ public class dorian {
         }
         log.info("Damage Correction mode:\t{}", cor_mode.getModeName());
         if (cor_mode.equals(CorrectionMode.WEIGHTING)) {
-            log.info("Damage profiles:      \t{}", cmd.getOptionValue("dp5"));
-            log.info("                      \t{}", cmd.getOptionValue("dp3"));
+            if (cmd.hasOption("dp5") || cmd.hasOption("dp3")) {
+                log.info("Damage profiles:      \t{}", cmd.getOptionValue("dp5"));
+                log.info("                      \t{}", cmd.getOptionValue("dp3"));
+            } else if (cmd.hasOption("dp_file")) {
+                log.info("Damage profile file:  \t{}", cmd.getOptionValue("dp_file"));
+            }
         }
     }
 }

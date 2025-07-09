@@ -22,31 +22,27 @@ public class DamageProfileParser {
      * @return Map with default read group as key and a map of damage profiles
      * @throws IOException
      */
-    public static Map<String, Map<String, List<Double>>> damageProfile(String dp5_file, String dp3_file) throws IOException {
+    public static Map<String, Map<String, ArrayList<Double>>> damageProfile(String dp5_file, String dp3_file) throws IOException {
 
         // Parse 5' and 3' damage profile
-        List<Double> dp5 = parseDamageProfile(dp5_file);
-        List<Double> dp3 = parseDamageProfile(dp3_file);
+        ArrayList<Double> dp5 = parseDamageProfile(dp5_file);
+        ArrayList<Double> dp3 = parseDamageProfile(dp3_file);
 
         // Create a map to hold the parsed damage profiles
-        Map<String, List<Double>> dpMap = new HashMap<>();
+        Map<String, ArrayList<Double>> dpMap = new HashMap<>();
         dpMap.put("dp5", dp5);
         dpMap.put("dp3", dp3);
 
         // Add to parsedDP map with read group as key
-        Map<String, Map<String, List<Double>>> parsedDP = new HashMap<>();
+        Map<String, Map<String, ArrayList<Double>>> parsedDP = new HashMap<>();
         parsedDP.put("default", dpMap);
 
         return parsedDP;
     }
 
-    public static Map<String, Map<String, List<Double>>> damageProfile(String dp_file) throws IOException {
+    public static Map<String, Map<String, ArrayList<Double>>> damageProfile(String dp_file) throws IOException {
         // Initialise output map
-        Map<String, Map<String, List<Double>>> parsedDP = new HashMap<>();
-
-        // TODO:
-        //  - Implement TSV parser
-        //  - for each line, parse read group and damage profiles, and add to parsedDP map
+        Map<String, Map<String, ArrayList<Double>>> parsedDP = new HashMap<>();
 
         // Configure the TsvParser settings
         TsvParserSettings settings = new TsvParserSettings();
@@ -67,12 +63,17 @@ public class DamageProfileParser {
             String dp5_path = record[1];
             String dp3_path = record[2];
 
+            // Check if the paths exist
+            if (!Files.exists(Paths.get(dp5_path)) || !Files.exists(Paths.get(dp3_path))) {
+                throw new IOException("Damage profile files not found: " + dp5_path + ", " + dp3_path);
+            }
+
             // Parse the damage profiles for the read group
-            List<Double> dp5 = parseDamageProfile(dp5_path);
-            List<Double> dp3 = parseDamageProfile(dp3_path);
+            ArrayList<Double> dp5 = parseDamageProfile(dp5_path);
+            ArrayList<Double> dp3 = parseDamageProfile(dp3_path);
 
             // Create a map to hold the parsed damage profiles for this read group
-            Map<String, List<Double>> dpMap = new HashMap<>();
+            Map<String, ArrayList<Double>> dpMap = new HashMap<>();
             dpMap.put("dp5", dp5);
             dpMap.put("dp3", dp3);
 
@@ -89,9 +90,9 @@ public class DamageProfileParser {
      * @param FilePath Path to damage profile
      * @return Damage profile as list of doubles
      */
-    private static List<Double> parseDamageProfile(String FilePath) throws IOException {
+    private static ArrayList<Double> parseDamageProfile(String FilePath) throws IOException {
         // Initialise output
-        List<Double> parsedProfile = new ArrayList<>();
+        ArrayList<Double> parsedProfile = new ArrayList<>();
 
         // Configure the TsvParser settings
         TsvParserSettings settings = new TsvParserSettings();
