@@ -61,19 +61,12 @@ public class DamageCorrection {
 
         // Iterate over mapping positions
         for (MappingPosition mp : weightedReads) {
-            // Get read group from MappingPosition and use according damage profiles
-            ArrayList<Double> dp5;
-            ArrayList<Double> dp3;
-            if (dorian.dp.size() == 1) {
-                dp5 = dorian.dp.get("default").get("dp5");
-                dp3 = dorian.dp.get("default").get("dp3");
-            } else {
-                String readGroup = mp.read_group;
-                dp5 = dorian.dp.get(readGroup).get("dp5");
-                dp3 = dorian.dp.get(readGroup).get("dp3");
-            }
-            // Correct position
+            // Check if read is damaged and apply according damage correction
             if (damType.equals(DamageType.CT) && mp.base == 'T' && !mp.is_reverse) {
+                // Get read group from MappingPosition and use according damage profiles
+                ArrayList<Double> dp5 = getDamageProfile(mp.read_group, "dp5");
+                ArrayList<Double> dp3 = getDamageProfile(mp.read_group, "dp3");
+                // Correct damage and update weight counters
                 List<Double> dp = mapDamageToRead(mp.read_length, dp5, dp3);
                 double dam = dp.get(mp.read_idx);
                 double cor_weight = 1 - dam;
@@ -81,12 +74,15 @@ public class DamageCorrection {
                 upvote_counter.addWeight(dam);
 
             } else if (damType.equals(DamageType.GA) && mp.base == 'A' && mp.is_reverse) {
+                // Get read group from MappingPosition and use according damage profiles
+                ArrayList<Double> dp5 = getDamageProfile(mp.read_group, "dp5");
+                ArrayList<Double> dp3 = getDamageProfile(mp.read_group, "dp3");
                 // Reverse damage profiles to match reverse reads
                 List<Double> rev_dp5 = new ArrayList<>(List.copyOf(dp5));
                 Collections.reverse(rev_dp5);
                 List<Double> rev_dp3 = new ArrayList<>(List.copyOf(dp3));
                 Collections.reverse(rev_dp3);
-
+                // Correct damage and update weight counters
                 List<Double> dp = mapDamageToRead(mp.read_length, rev_dp3, rev_dp5);
                 double dam = dp.get(mp.read_idx);
                 double cor_weight = 1 - dam;
@@ -101,6 +97,19 @@ public class DamageCorrection {
         return weightedReads;
     }
 
+    /**
+     * Get the damage profile for the specified read group and end
+     * @param readGroup Read group ID of current mapping position
+     * @param end   5' or 3' end of the read
+     * @return Damage profile for the specified read group and end
+     */
+    private static ArrayList<Double> getDamageProfile(String readGroup, String end) {
+        if (dorian.dp.size() == 1) {
+            return dorian.dp.get("default").get(end);
+        } else {
+            return dorian.dp.get(readGroup).get(end);
+        }
+    }
 
 
     /**
