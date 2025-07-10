@@ -56,11 +56,6 @@ public class MappingPosition {
         this.weight += additionalWeight;
     }
 
-    // Getters
-    public Character getBase() {
-        return this.base;
-    }
-
 
     /**
      * Extracts information of SAMrecord and creates MappingPosition
