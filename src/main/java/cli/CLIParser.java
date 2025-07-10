@@ -57,50 +57,29 @@ public class CLIParser {
         try {
             CommandLine cmd = parser.parse(options, args);
 
+            // Check for help flag
             if (cmd.hasOption(HELP_FLAG[0])) {
                 formatter.printHelp("dorian", options);
                 System.exit(0);
             }
 
-            if (!cmd.hasOption(BAM_INPUT[1]) || !cmd.hasOption(OUTPUT_DIR[1]) || !cmd.hasOption(REFERENCE[1]) || !cmd.hasOption(CORRECTION_MODE[1])) {
-
-                if (!cmd.hasOption(COV[1]) || !cmd.hasOption(FREQ[1])) {
-                    System.err.println("Error: Coverage and Frequency values are required.");
-                    formatter.printHelp("dorian", options);
-                    System.exit(1);
-                }
-
-                String correction = cmd.getOptionValue(CORRECTION_MODE[1]);
-                if (correction.equals("w")) {
-                    // Make dp_file, and dp5 and dp3 mutually exclusive
-                    if (cmd.hasOption(DP_FILE[1]) && (cmd.hasOption(DP5_INPUT[1]) || cmd.hasOption(DP3_INPUT[1]))) {
-                        System.err.println("Error: Cannot use --dp_file with --dp5 or --dp3. Specify either --dp_file or both --dp5 and --dp3.");
-                        System.exit(1);
-                    }
-                    // If dp5 is specified, dp3 must also be specified
-                    if (!cmd.hasOption(DP_FILE[1]) && (!cmd.hasOption(DP5_INPUT[1]) || !cmd.hasOption(DP3_INPUT[1]))) {
-                        System.err.println("Error: --dp5 and --dp3 are both required when --dp_file is not used.");
-                        System.exit(1);
-                    }
-                    // If correction mode is 'w', either dp5 and dp3, or dp_file must be specified
-                    if (!cmd.hasOption(DP5_INPUT[1]) && !cmd.hasOption(DP3_INPUT[1]) && !cmd.hasOption(DP_FILE[1])) {
-                        System.err.println("Error: Damage profile files are required when correction mode is 'w'.");
-                        System.exit(1);
-                    }
-
-                }
+            // Check for required arguments
+            if (!cmd.hasOption(BAM_INPUT[1]) || !cmd.hasOption(OUTPUT_DIR[1]) || !cmd.hasOption(REFERENCE[1]) ||
+                    !cmd.hasOption(CORRECTION_MODE[1]) || !cmd.hasOption(COV[1]) || !cmd.hasOption(FREQ[1])) {
 
                 System.err.println("Error: Required arguments are missing.");
                 formatter.printHelp("dorian", options);
                 System.exit(1);
             }
 
+            // Check that valid correction mode is provided
             String correction = cmd.getOptionValue(CORRECTION_MODE[1]);
             if (!correction.equals("s") && !correction.equals("w") && !correction.equals("nc")) {
                 System.err.println("Error: Invalid correction mode. Use s, w, or nc.");
                 System.exit(1);
             }
 
+            // If correction mode is 's' or 'w', check that valid detection mode is provided
             if (!correction.equals("nc")) {
                 if (!cmd.hasOption(DETECTION_MODE[1])) {
                     System.err.println("Error: Detection mode required unless correction mode is 'nc'.");
@@ -111,6 +90,25 @@ public class CLIParser {
                         System.err.println("Error: Invalid detection mode. Use pb or pf.");
                         System.exit(1);
                     }
+                }
+            }
+
+            // If correction mode is 'w', check that valid damage profile files are provided
+            if (correction.equals("w")) {
+                // Make dp_file, and dp5 and dp3 mutually exclusive
+                if (cmd.hasOption(DP_FILE[1]) && (cmd.hasOption(DP5_INPUT[1]) || cmd.hasOption(DP3_INPUT[1]))) {
+                    System.err.println("Error: Cannot use --dp_file with --dp5 or --dp3. Specify either --dp_file or both --dp5 and --dp3.");
+                    System.exit(1);
+                }
+                // If dp5 is specified, dp3 must also be specified
+                if (!cmd.hasOption(DP_FILE[1]) && (!cmd.hasOption(DP5_INPUT[1]) || !cmd.hasOption(DP3_INPUT[1]))) {
+                    System.err.println("Error: --dp5 and --dp3 are both required when --dp_file is not used.");
+                    System.exit(1);
+                }
+                // If correction mode is 'w', either dp5 and dp3, or dp_file must be specified
+                if (!cmd.hasOption(DP5_INPUT[1]) && !cmd.hasOption(DP3_INPUT[1]) && !cmd.hasOption(DP_FILE[1])) {
+                    System.err.println("Error: Damage profile files are required when correction mode is 'w'.");
+                    System.exit(1);
                 }
             }
 
