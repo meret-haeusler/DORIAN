@@ -1,5 +1,5 @@
 ## DORIAN  
-[![DOI](https://zenodo.org/badge/841882108.svg)](https://doi.org/10.5281/zenodo.16673325)
+[![DOI](https://zenodo.org/badge/841882108.svg)](https://doi.org/10.5281/zenodo.16673325)  
 DORIAN (**D**amage-aware gen**O**me **R**econstruct**I**on for **AN**cient data) is a genome reconstruction tool designed for ancient data. DORIAN implements  three damage-aware reconstruction methods where positions that show ancient specific damage patterns are corrected prior to base calling. 
 
 * Polarization-Based Damage Silencing identifies damaged positions using the reference sequence and replaces damaged bases with a non-informative base call.
