@@ -2,6 +2,7 @@
 poster/
 test_out*/
 .notes/
+test_data2/
 
 target/
 !.mvn/wrapper/maven-wrapper.jar
