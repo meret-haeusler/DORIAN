@@ -38,7 +38,7 @@ public class FastaIO {
             if(curLine.startsWith(">")) {
                 // If headerBuffer has entry add header and seq to list of entries
                 if (!headerBuffer.isEmpty()) {
-                    fastaEntries.add(new Fasta(headerBuffer, seqBuffer.toString()));
+                    fastaEntries.add(new Fasta(headerBuffer, seqBuffer.toString().toUpperCase()));
                 }
                 // Add new header to headerBuffer and clear seqBuffer
                 headerBuffer = curLine;
@@ -51,7 +51,7 @@ public class FastaIO {
         }
         // Add last fasta object to list manually
         if (!headerBuffer.isEmpty()) {
-            fastaEntries.add(new Fasta(headerBuffer, seqBuffer.toString()));
+            fastaEntries.add(new Fasta(headerBuffer, seqBuffer.toString().toUpperCase()));
         }
         // Return list with fasta entries
         return fastaEntries;
