@@ -25,6 +25,7 @@ DORIAN allows two modes to detect and correct damaged positions, respectively.
 ## Software Requirements
 * Java 22.0.1
 * Apache Maven 3.9.10
+* samtools 1.22
 
 ### OS Requirements
 DORIAN was tested on the following systems:
@@ -45,7 +46,9 @@ java -jar <path/to/file>DORIAN.jar [options]
 
  -h,--help                      Print help message
 
- -b,--bam <FILE>                BAM file of mapped reads
+ -b,--bam <FILE>                BAM file of mapped reads (sorted); 
+                                  DORIAN expects the index file (.bai) to be in the same directory, 
+                                  if not present, it will be created.
  -r,--reference <FILE>          Reference genome
  -o,--out <PATH>                Path to output directory (must already exist)
 
@@ -134,4 +137,21 @@ A small dummy dataset is provided in the ```test_data``` folder of the repositor
 * Run DORIAN with Polarization-Based damage detection and Weighting correction using a minimal coverage of 3 and a minimal frequency of 0.66. Use the same DamageProfiles for all read groups:  
   ```java -jar DORIAN.jar -b test_data/test_reads.bam -r test_data/test_genome.fasta -o test_out -c 3 -f 0.66 --correction w --detection pb --dp3 test_data/dp3.txt --dp5 test_data/dp5.txt```  
 * Run DORIAN with Polarization-Free damage detection and Weighting correction using a minimal coverage of 3 and a minimal frequency of 0.66. Use different DamageProfiles for each read group as specified in the ```test_data/dp_file.tsv``` file and include a BED file to the output:  
-  ```java -jar DORIAN.jar -b test_data/test_reads.bam -r test_data/test_genome.fasta -o test_out -c 3 -f 0.66 --correction w --detection pf --dp_file test_data/dp_file.tsv```  
+  ```java -jar DORIAN.jar -b test_data/test_reads.bam -r test_data/test_genome.fasta -o test_out -c 3 -f 0.66 --correction w --detection pf --dp_file test_data/dp_file.tsv```
+
+## Citation
+When using DORIAN in your research, please cite the following publication:
+```
+@article{dorian2025,
+  title={Mitochondrial genomes of Middle Pleistocene horses from the open-air site complex of Sch{\"o}ningen},
+  author={Weingarten, Arianna and H{\"a}usler, Meret and Serangeli, Jordi and Verheijen, Ivo and Reiter, Ella and Radzevi{\v{c}}i{\=u}t{\.e}, Rita and Stoessel, Alexander and Krause, Johannes and Spyrou, Maria A and Conard, Nicholas J and Nieselt, Kay and Posth, Cosimo},
+  journal={Nature Ecology \& Evolution},
+  pages={1--11},
+  year={2025},
+  doi={10.1038/s41559-025-02859-5},
+  publisher={Nature Publishing Group UK London}
+}
+```
+|Release History | Archive Link |
+|----------------|--------------|
+|v0.1.0 – Initial Release as used in Weingraten et al. (2025) | [![DOI](https://zenodo.org/badge/841882108.svg)](https://doi.org/10.5281/zenodo.16673325)  |
