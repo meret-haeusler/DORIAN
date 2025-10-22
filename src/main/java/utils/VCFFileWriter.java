@@ -70,7 +70,7 @@ public class VCFFileWriter {
      * @param sample_name   Name of analysed sample
      * @return  VCFHeader for given sample
      */
-    public static VCFHeader defaultHeader(Fasta ref, String sample_name){
+    public static VCFHeader defaultHeader(Fasta ref, String sample_name, String method) {
 
         VCFHeaderVersion version = VCFHeaderVersion.valueOf("VCF4_2");
 
@@ -83,7 +83,7 @@ public class VCFFileWriter {
         VCFHeaderLine dp = new VCFFormatHeaderLine("DP", 1, VCFHeaderLineType.Integer,
                 "Approximate read depth (reads with MQ=255 or with bad mates are filtered)");
         VCFHeaderLine cor_mode_filter = new VCFInfoHeaderLine("COR_MODE", 1, VCFHeaderLineType.String,
-                "Used correction mode: " + dorian.cor_mode.getModeName());
+                "Used correction mode: " + method);
         VCFHeaderLine cov_1_filter = new VCFInfoHeaderLine("MIN_COV_1", 2, VCFHeaderLineType.String,
                 "Minimal coverage filter (incl. N): " + dorian.cov);
         VCFHeaderLine freq_filter = new VCFInfoHeaderLine("MIN_FREQ", 3, VCFHeaderLineType.String,

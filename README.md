@@ -1,16 +1,31 @@
-## DORIAN  
-[![DOI](https://zenodo.org/badge/841882108.svg)](https://doi.org/10.5281/zenodo.16673325)  
-DORIAN (**D**amage-aware gen**O**me **R**econstruct**I**on for **AN**cient data) is a genome reconstruction tool designed for ancient data. DORIAN implements  three damage-aware reconstruction methods where positions that show ancient specific damage patterns are corrected prior to base calling. 
+## DORIAN
+<table>
+    <tr>
+        <td>
+DORIAN (<b>D</b>amage-aware gen<b>O</b>me <b>R</b>econstruct<b>I</b>on for <b>AN</b>cient data) is a genome reconstruction tool designed for ancient data. DORIAN implements damage-aware genome reconstruction with different methods to detect and correct damaged positions prior to consensus base calling. <br>
+DORIAN allows two modes to detect and correct damaged positions, respectively.  
+        </td>
+        <td>
+            <img src="media/DORIAN.jpg" alt="DORIAN Logo" width="750"/>
+        </td>
+    </tr>
+</table>
 
-* Polarization-Based Damage Silencing identifies damaged positions using the reference sequence and replaces damaged bases with a non-informative base call.
-* Polarization-Free Damage Silencing identifies damages positions by specific damage patterns in the mapping reads and replaces the damaged bases with a non-informative base call.
-* Polarization-Free Damage Weighting uses also uses the ancient specific damage pattern to identify damaged positions and performs a weighting on the affected bases to increase or decrease their influence on the base call bases on the severity of the damage observed.
+### Damage detection
+* Polarization-Based identifies damaged positions using the reference base.
+* Polarization-Free identifies damaged positions using ancient specific damage patterns in the mapping reads.
 
-In addition, a state-of-the-art genome reconstruction is implemented that bases the base calls merely on coverage and base frequencies. 
+### Damage correction
+* Silencing replaces damaged positions with a non-informative ('N') base call.
+* Weighting performs a weighting on the affected bases to increase or decrease their influence on the base call bases on the severity of the damage observed.
+* No correction: Consensus base calls are merely made based on coverage and base frequency.  
+  If ```--correction nc``` is specified, ```--detection``` parameter must not be specified.
+
 
 ## Software Requirements
 * Java 22.0.1
 * Apache Maven 3.9.10
+* samtools 1.22
 
 ### OS Requirements
 DORIAN was tested on the following systems:
@@ -23,8 +38,7 @@ git clone git@github.com:meret-haeusler/DORIAN.git
 cd DORIAN
 mvn clean compile assembly:single
 ```
-The compiled jar file can be found in ```DORIAN/target```. A precompiled excutable jar file is also available in the ```DORIAN/out/artifacts/DORIAN_jar``` folder of the repository.
-
+The compiled jar file can be found in ```DORIAN/target```. A precompiled executable jar file is also available in the ```DORIAN/out/artifacts/DORIAN_jar``` folder of the repository.
 
 ## Usage
 `````
@@ -32,23 +46,44 @@ java -jar <path/to/file>/DORIAN.jar [options]
 
  -h,--help                      Print help message
 
- -b,--bam <FILE>                BAM file of mapped reads
- -r,--ref-file <FILE>           Reference genome
- -o,--out <PATH>                Path to output directory
+ -b,--bam <FILE>                BAM file of mapped reads (sorted); 
+                                  DORIAN expects the index file (.bai) to be in the same directory, 
+                                  if not present, it will be created.
+ -r,--reference <FILE>          Reference genome
+ -o,--out <PATH>                Path to output directory (must already exist)
 
- -c,--coverage <INT>            Minimum coverage for consensus calling
- -f,--minfreq <DOUBLE>          Minimum frequency for consensus calling
+ -c,--cov <INT>                 Minimum coverage for consensus calling
+ -f,--freq <DOUBLE>             Minimum frequency for consensus calling
 
- -m,--mode <INT>                Correction modes:
-                                1=no correction
-                                2=polarization-based damage silencing
-                                3=polarization-free damage silencing
-                                4=polarization-free damage weighting
+--correction <STRING>           Damage correction mode: 
+                                    s  (Silencing)
+                                    w  (Weighting)
+                                    nc (no correction)
+--detection <STRING>            Damage detection mode (only for correction modes s and w):
+                                    pb (Polarization-Based)
+                                    pf (Polarization-Free)  
 
- Only for polarization-free damage weighting:                               
- -dp3,--damageprofile3 <FILE>   Path to DamageProfile of 3' end
- -dp5,--damageprofile5 <FILE>   Path to DamageProfile of 5' end
+ Only for correction mode w:                               
+ --dp3 <FILE>                   Path to DamageProfile of 3' end
+ --dp5 <FILE>                   Path to DamageProfile of 5' end
+ --dp_file <FILE>               Path to tsv file specifying a DamageProfile for each read group (details below)
+ 
+ Optional:
+ --bed                          Writes a BED file to --out (ROI table in IGV format for corrected positions)
+ --vcf                          Writes a VCF file to --out
 `````
+
+### --dp_file parameter
+The --dp_file parameter allows the user to specify different DamageProfiles for the read groups in the BAM file. 
+This is useful when different read groups have different damage patterns, e.g. combined samples with and without UDG treatment.  
+The file should be a tsv file that contains the read group ID and the paths to the DamageProfile files for the 5' and 3' ends of the respective read groups:
+```
+read_group_id    path/to/dp5.txt    path/to/dp3.txt
+```
+- The read group ID can be obtained from the BAM file using the command:
+```samtools view -H <path/to/bam> | grep '^@RG'``` (use only the string after ```ID:```) 
+- The path can either be absolute or relative to the directory where DORIAN is run.
+- An example file is provided at `test_data/dp_file.tsv`.
 
 ## Output Files
 <details>
@@ -75,7 +110,7 @@ Reconstructed sequence of the input sample. As header, the sample name as specif
 <details>
 <summary>BED</summary>
 
-> Only for runs with correction enabled.
+> Only for runs where ```--correction```is either ```w```  or ```s```.
 
 File that can be loaded to IGV ([Interactive Genome Viewer](https://igv.org)) together with the BAM and reference file to closer inspect the corrected positions. This highlights the positions on which a correction was performed as well as the two previous and following positions.
 
@@ -86,8 +121,37 @@ File that can be loaded to IGV ([Interactive Genome Viewer](https://igv.org)) to
 <summary>VCF</summary>
 File similar to VCF files generated in GATK's UnifiedGenotyper or HalotypeCaller. 
 
-In Polarization-Free Damage Weighting, weights that are not a whole number are rounded to the next integer in the AD tag of the VCF file.
+If ```--correction``` is ```w```, weights which are not a whole number are rounded to the next integer in the AD tag of the VCF file.
 </details>
 
-## Test data
-A guide to generate ancient DNA samples and scripts for running DORIAN and evaluation can be found [here](https://github.com/meret-haeusler/Supplementary_DORIAN_evaluation).
+
+
+## Test Data and Example Commands 
+A small dummy dataset is provided in the ```test_data``` folder of the repository. It contains a BAM file, a reference genome, and DamageProfiles for both 5' and 3' ends.
+
+### Example commands
+* Run DORIAN with Polarization-Based damage detection and Silencing correction using a minimal coverage of 3 and a minimal frequency of 0.66:  
+  ```java -jar DORIAN.jar -b test_data/test_reads.bam -r test_data/test_genome.fasta -o test_out -c 3 -f 0.66 --correction s --detection pb```
+* Run DORIAN with Polarization-Free damage detection and Silencing correction using a minimal coverage of 3 and a minimal frequency of 0.66. Include a VCF and BED file to the output:  
+  ```java -jar DORIAN.jar -b test_data/test_reads.bam -r test_data/test_genome.fasta -o test_out -c 3 -f 0.66 --correction s --detection pf --bed --vcf```
+* Run DORIAN with Polarization-Based damage detection and Weighting correction using a minimal coverage of 3 and a minimal frequency of 0.66. Use the same DamageProfiles for all read groups:  
+  ```java -jar DORIAN.jar -b test_data/test_reads.bam -r test_data/test_genome.fasta -o test_out -c 3 -f 0.66 --correction w --detection pb --dp3 test_data/dp3.txt --dp5 test_data/dp5.txt```  
+* Run DORIAN with Polarization-Free damage detection and Weighting correction using a minimal coverage of 3 and a minimal frequency of 0.66. Use different DamageProfiles for each read group as specified in the ```test_data/dp_file.tsv``` file and include a BED file to the output:  
+  ```java -jar DORIAN.jar -b test_data/test_reads.bam -r test_data/test_genome.fasta -o test_out -c 3 -f 0.66 --correction w --detection pf --dp_file test_data/dp_file.tsv```
+
+## Citation
+When using DORIAN in your research, please cite the following publication:
+```
+@article{dorian2025,
+  title={Mitochondrial genomes of Middle Pleistocene horses from the open-air site complex of Sch{\"o}ningen},
+  author={Weingarten, Arianna and H{\"a}usler, Meret and Serangeli, Jordi and Verheijen, Ivo and Reiter, Ella and Radzevi{\v{c}}i{\=u}t{\.e}, Rita and Stoessel, Alexander and Krause, Johannes and Spyrou, Maria A and Conard, Nicholas J and Nieselt, Kay and Posth, Cosimo},
+  journal={Nature Ecology \& Evolution},
+  pages={1--11},
+  year={2025},
+  doi={10.1038/s41559-025-02859-5},
+  publisher={Nature Publishing Group UK London}
+}
+```
+|Release History | Archive Link |
+|----------------|--------------|
+|v0.1.0 – Initial Release as used in Weingraten et al. (2025) | [![DOI](https://zenodo.org/badge/841882108.svg)](https://doi.org/10.5281/zenodo.16673325)  |

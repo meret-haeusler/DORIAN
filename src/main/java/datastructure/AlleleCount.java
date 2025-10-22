@@ -23,13 +23,4 @@ public class AlleleCount {
         return this.counts;
     }
 
-    // Setter
-    public void setAlleles(List<Allele> alleles) {
-        this.alleles = alleles;
-    }
-
-    public void setCounts(int[] counts) {
-        this.counts = counts;
-    }
-
 }

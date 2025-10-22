@@ -1,7 +1,8 @@
 ### Custom ###
 poster/
-test_out/
-notes.md
+test_out*/
+.notes/
+test_data2/
 
 target/
 !.mvn/wrapper/maven-wrapper.jar
@@ -9,6 +10,7 @@ target/
 !**/src/test/**/target/
 
 ### IntelliJ IDEA ###
+.idea/.name
 .idea/modules.xml
 .idea/jarRepositories.xml
 .idea/compiler.xml

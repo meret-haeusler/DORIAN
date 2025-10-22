@@ -27,12 +27,13 @@ public class Fasta {
         return sequence;
     }
 
-    // Setters
-    public void setHeader(String header) {
-        this.header = header;
-    }
-
-    public void setSequence(String sequence) {
-        this.sequence = sequence;
+    /**
+     * Strips the reference name of the FASTA header from leading ">" and removes everything after the first space.
+     *
+     * @return The stripped reference name.
+     */
+    public String getHeaderID() {
+        // Remove leading ">" and everything after the first space
+        return header.replaceFirst("^>", "").split(" ")[0];
     }
 }
