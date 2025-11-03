@@ -154,4 +154,4 @@ When using DORIAN in your research, please cite the following publication:
 ```
 |Release History | Archive Link |
 |----------------|--------------|
-|v0.1.0 – Initial Release as used in Weingraten et al. (2025) | [![DOI](https://zenodo.org/badge/841882108.svg)](https://doi.org/10.5281/zenodo.16673325)  |
+|v0.1.0 – Initial Release as used in Weingarten et al. (2025) | [![DOI](https://zenodo.org/badge/841882108.svg)](https://doi.org/10.5281/zenodo.16673325)  |
